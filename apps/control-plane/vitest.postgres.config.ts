@@ -18,6 +18,7 @@ export default defineConfig({
       "tests/native-presence.test.ts",
       "tests/native-artifacts.test.ts",
       "tests/audit-history.test.ts",
+      "tests/indexing.test.ts",
       "tests/product-boundary.test.ts",
       "tests/poc-boundary.test.ts",
       "tests/database-fixture.test.ts",

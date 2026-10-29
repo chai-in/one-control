@@ -23,6 +23,11 @@ const { values } = parseArgs({
 });
 const feature = values.feature;
 const features = {
+  indexing: {
+    directory: "modules/indexing/native",
+    command: "oc-indexing",
+    permissions: ["indexing.manage"],
+  },
   inventory: {
     directory: "modules/inventory/native",
     command: "oc-inventory",

@@ -13,6 +13,7 @@ import { serverModules } from "../src/server-modules.js";
 export async function nativeFixture(
   operator: string,
   options: {
+    features?: string[];
     artifactOrigin?: string;
     artifacts?: Record<
       string,
@@ -67,7 +68,13 @@ export async function nativeFixture(
     }),
   );
   const permissions = [...new Set(serverModules.modules.flatMap((module) => [...module.permissions]))];
-  const featureIds = ["inventory", "windows-updates", "application-updates", "store-updates", "deployment"];
+  const featureIds = options.features ?? [
+    "inventory",
+    "windows-updates",
+    "application-updates",
+    "store-updates",
+    "deployment",
+  ];
   const attestations: string[] = [];
   const entries = featureIds.map((id) => {
     const artifact = options.artifacts?.[id] ?? {

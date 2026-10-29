@@ -16,6 +16,16 @@ const descriptions: Record<Command["kind"], string> = {
     "Find applicable Windows software updates using the computer’s existing update configuration.",
   "windows.install":
     "Install selected update IDs and revisions from recent scans. A separate approver is required.",
+  "indexing.status":
+    "Read the Search service, startup setting and actual catalog activity without changing indexing.",
+  "indexing.enable":
+    "Set the approved startup mode and start Windows Search, preserving its catalog and location rules.",
+  "indexing.disable":
+    "Disable startup and stop Windows Search. Indexed search will be unavailable; catalog and location rules are preserved.",
+  "indexing.pause":
+    "Stop the Search service without changing its startup setting. This is a service-stop fallback, not a true indexing pause; indexed queries are unavailable until it starts again.",
+  "indexing.resume":
+    "Start the Search service using its existing startup setting. A disabled service must first be enabled.",
   "winget.upgrade": "Upgrade an exact WinGet package to a pinned version in the signed-in user’s session.",
   "store.upgrade":
     "Request an update for one supported Microsoft Store product in the signed-in user’s session.",
@@ -65,7 +75,7 @@ export function JobForm({
   const shownTargets = targets.filter((device) =>
     device.hostname.toLowerCase().includes(search.toLowerCase()),
   );
-  const mutating = !["inventory.scan", "windows.scan"].includes(kind);
+  const mutating = !["inventory.scan", "windows.scan", "indexing.status"].includes(kind);
   function changeTargets(ids: string[]) {
     setSelected(ids);
     setUpdates([]);
@@ -76,6 +86,7 @@ export function JobForm({
     try {
       const data = new FormData(event.currentTarget);
       let command: unknown = { kind };
+      if (kind === "indexing.enable") command = { kind, startup: String(data.get("startup")) };
       if (kind === "windows.install")
         command = { kind, updates: chosenUpdates.map(({ id, revision }) => ({ id, revision })) };
       if (kind === "winget.upgrade")
@@ -121,6 +132,16 @@ export function JobForm({
         ))}
       </select>
       <p className="field-help">{descriptions[kind]}</p>
+      {kind === "indexing.enable" && (
+        <label>
+          Search startup mode
+          <select name="startup" defaultValue="automatic-delayed">
+            <option value="automatic-delayed">Automatic (delayed)</option>
+            <option value="automatic">Automatic</option>
+            <option value="manual">Manual</option>
+          </select>
+        </label>
+      )}
       <label htmlFor="ring">Rollout ring</label>
       <select
         id="ring"

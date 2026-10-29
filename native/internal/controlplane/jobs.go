@@ -248,6 +248,10 @@ func (c *Client) ExecuteJob(ctx context.Context, manager *lifecycle.Manager, sto
 		if lease.ModuleID == "windows-updates" {
 			permission = "windows.manage"
 		}
+	case "indexing.status", "indexing.enable", "indexing.disable", "indexing.pause", "indexing.resume":
+		if lease.ModuleID == "indexing" {
+			permission = "indexing.manage"
+		}
 	}
 	if permission == "" {
 		if err = store.completed("failed", json.RawMessage(`{"reason":"provider_not_available"}`)); err != nil {
@@ -277,7 +281,7 @@ func (c *Client) ExecuteJob(ctx context.Context, manager *lifecycle.Manager, sto
 	if err = store.save(&next); err != nil {
 		return err
 	}
-	if lease.ModuleID == "windows-updates" {
+	if taskPermission(lease.ModuleID) != "" {
 		return c.startTask(ctx, manager, store, permission)
 	}
 	operationCtx, cancel := context.WithDeadline(ctx, deadline)

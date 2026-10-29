@@ -7,6 +7,16 @@ export const windowsUpdateSchema = z.object({ id: z.uuid(), revision: z.int().mi
 export const commandSchema = z.discriminatedUnion("kind", [
   z.object({ kind: z.literal("inventory.scan") }).strict(),
   z.object({ kind: z.literal("windows.scan") }).strict(),
+  z.object({ kind: z.literal("indexing.status") }).strict(),
+  z
+    .object({
+      kind: z.literal("indexing.enable"),
+      startup: z.enum(["automatic", "automatic-delayed", "manual"]),
+    })
+    .strict(),
+  z.object({ kind: z.literal("indexing.disable") }).strict(),
+  z.object({ kind: z.literal("indexing.pause") }).strict(),
+  z.object({ kind: z.literal("indexing.resume") }).strict(),
   z
     .object({ kind: z.literal("windows.install"), updates: z.array(windowsUpdateSchema).min(1).max(100) })
     .strict(),
@@ -32,7 +42,7 @@ export function commandContext(command: Command): ExecutionContext {
   return ["winget.upgrade", "store.upgrade"].includes(command.kind) ? "user" : "system";
 }
 export function isMutation(command: Command): boolean {
-  return !["inventory.scan", "windows.scan"].includes(command.kind);
+  return !["inventory.scan", "windows.scan", "indexing.status"].includes(command.kind);
 }
 export const manifestSchema = z
   .object({

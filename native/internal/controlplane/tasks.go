@@ -14,6 +14,8 @@ func taskPermission(module string) string {
 	switch module {
 	case "windows-updates":
 		return "windows.manage"
+	case "indexing":
+		return "indexing.manage"
 	}
 	return ""
 }

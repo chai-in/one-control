@@ -19,7 +19,16 @@ export async function consoleNativeFixture() {
     DEV_APPROVER_TOKEN: token(),
     DEV_VIEWER_TOKEN: token(),
   };
-  const native = await nativeFixture(env.DEV_OPERATOR_TOKEN);
+  const native = await nativeFixture(env.DEV_OPERATOR_TOKEN, {
+    features: [
+      "inventory",
+      "windows-updates",
+      "indexing",
+      "application-updates",
+      "store-updates",
+      "deployment",
+    ],
+  });
   const db = await openDatabase("local");
   await migrate(db);
   const app = await buildApp(db, parseConfig({ ...env, NODE_ENV: "test", ...native.config }));

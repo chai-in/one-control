@@ -11,6 +11,7 @@ import {
   record,
   text,
 } from "../../../apps/console/src/view-model.js";
+import { IndexingResult } from "../../indexing/console/IndexingResult.js";
 
 export function StateBadge({ state }: { state: Job["state"] }) {
   const status = jobStates[state];
@@ -49,6 +50,12 @@ export function CommandSummary({ job }: { job: Pick<Job, "kind" | "command" | "c
           <strong>{command.updates.length} exact IDs and revisions</strong>
         </div>
       )}
+      {command.kind === "indexing.enable" && (
+        <div>
+          <span className="eyebrow">APPROVED STARTUP</span>
+          <strong>{command.startup}</strong>
+        </div>
+      )}
     </div>
   );
 }
@@ -83,6 +90,7 @@ function Result({
   ];
   return (
     <div className="result-content">
+      {job.kind.startsWith("indexing.") && <IndexingResult result={result} />}
       {result.reconciledBy !== undefined && (
         <div className="notice">
           <FileCheck2 size={18} />

@@ -2,6 +2,7 @@ go 1.27.2
 
 use (
 	./modules/inventory/native
+	./modules/indexing/native
 	./modules/rdp/native
 	./modules/wake-relay/native
 	./modules/windows-updates/native

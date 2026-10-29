@@ -2,6 +2,7 @@ import { mkdirSync } from "node:fs";
 import { chromium, expect } from "@playwright/test";
 import { consoleNativeFixture } from "./lib/console-native-fixture.mjs";
 import { verifyOperationalWorkflows } from "./lib/verify-console-workflows.mjs";
+import { verifyIndexingWorkflow } from "./lib/verify-indexing-workflow.mjs";
 
 // Local-only acceptance exercise. It does not install an agent or execute an OS update.
 const fixture = await consoleNativeFixture();
@@ -162,6 +163,7 @@ try {
     apiOrigin,
     consoleOrigin,
   });
+  await verifyIndexingWorkflow({ page, fixture, device, hostname });
   // Hold an authorised refresh across sign-out, then deliver its old response.
   let releaseOldResponse;
   let responseHeld;

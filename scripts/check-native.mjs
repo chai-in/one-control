@@ -122,7 +122,7 @@ export function checkNative() {
     run("tooling-tests", process.execPath, ["--test", "scripts/tests/native-tooling.test.mjs"]);
     run("go-vet", go.command, ["-C", "native", "vet", "./..."], { env: go.env });
     run("go-test", go.command, ["-C", "native", "test", "./...", "-count=1", "-json"], { env: go.env });
-    for (const feature of ["inventory", "rdp", "wake-relay", "windows-updates"]) {
+    for (const feature of ["inventory", "rdp", "wake-relay", "windows-updates", "indexing"]) {
       const directory = `modules/${feature}/native`;
       run(`${feature}-vet`, go.command, ["-C", directory, "vet", "./..."], { env: go.env });
       run(`${feature}-test`, go.command, ["-C", directory, "test", "./...", "-count=1", "-json"], {

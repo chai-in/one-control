@@ -14,6 +14,10 @@ Windows Update now has a separate native host for exact scan/install commands,
 with renewable execution leases and chunked results. The bootstrap stays responsive
 while the host works. Selected packages use short-lived download capabilities,
 and artifacts can be served from the server computer behind TLS ingress.
+Windows Search indexing now has its own downloadable host and console receipts
+for catalog/service status, configured crawl rules, approved enable/disable and
+explicit service-stop fallback pause/resume. Timed pause, custom rule changes and
+baseline restoration remain open.
 Application update, deployment, recovery and user-session compatibility providers
 remain migration input. Remaining native host extraction, macOS installation, file transfer,
 clipboard synchronization, remote access, independent recovery and end-to-end
@@ -30,10 +34,14 @@ Windows compatibility builds, native conformance checks and PowerShell parsing.
 The Windows compatibility suite passed 73 tests and skipped 18 requiring elevated
 storage access locally; Windows CI passes all 101 expanded compatibility cases with
 no skips, and the native suite passes on Windows, Linux and macOS. The full
-control-plane suite now passes all 145 tests. Dispatch and
+control-plane suite includes native dispatch, indexing admission and scope-filtered audit tests. Dispatch and
 release tests exercise actual native custody, signed publication, scoped selection
-and enrollment. An isolated PostgreSQL 18.6 run passes all 83 required tests and
+and enrollment. Isolated PostgreSQL 18.6 runs use restricted runtime roles and
 cleans up its owned server. Native Windows secret-storage tests require elevation
-and fail rather than skip in Windows CI. Clean installation acceptance is being
-added to the Windows job. Remaining provider implementation and live endpoint
+and fail rather than skip in Windows CI. At commit `234b658`, both verification
+workflows pass. Windows CI installs a signed bootstrap as a SYSTEM service, proves
+zero feature downloads with empty selection, downloads Inventory only when selected,
+restarts with Inventory enabled without another download, and checks deselection
+and revocation. The next increment adds selected Indexing download and actual
+read-only command execution to this same pilot. Remaining provider implementation and live endpoint
 acceptance are still required.

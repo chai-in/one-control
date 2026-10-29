@@ -8,6 +8,7 @@ import { definition as ema } from "../../../modules/ema/definition.js";
 import { definition as falcon } from "../../../modules/falcon/definition.js";
 import { definition as falconEvents } from "../../../modules/falcon-events/definition.js";
 import { definition as falconSync } from "../../../modules/falcon-sync/definition.js";
+import { definition as indexing } from "../../../modules/indexing/definition.js";
 import { definition as integrationHttp } from "../../../modules/integration-http/definition.js";
 import { definition as inventory } from "../../../modules/inventory/definition.js";
 import { definition as nativeDispatch } from "../../../modules/native-dispatch/definition.js";
@@ -23,6 +24,11 @@ export const commandModules = {
   "inventory.scan": "inventory",
   "windows.scan": "windows-updates",
   "windows.install": "windows-updates",
+  "indexing.status": "indexing",
+  "indexing.enable": "indexing",
+  "indexing.disable": "indexing",
+  "indexing.pause": "indexing",
+  "indexing.resume": "indexing",
   "winget.upgrade": "application-updates",
   "store.upgrade": "store-updates",
   "package.install": "deployment",
@@ -40,6 +46,7 @@ const featureDefinitions = [
   commandHost,
   integrationHttp,
   inventory,
+  indexing,
   windowsUpdates,
   applicationUpdates,
   storeUpdates,

@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 1,
+  "id": "indexing",
+  "version": "0.1.0",
+  "optional": true,
+  "defaultEnabled": false,
+  "distribution": "server-catalog",
+  "source": { "server": "definition.ts", "console": "console", "native": "native", "windows": null },
+  "dependencies": [{ "id": "command-host", "version": "0.1.0" }],
+  "permissions": ["indexing.manage"],
+  "endpointRelease": "not-accepted"
+}

@@ -19,7 +19,7 @@ import { nativeFixture } from "./native-fixture.js";
 const execute = promisify(execFile);
 const repository = resolve("../..");
 
-test("signed thin installer runs as SYSTEM, downloads only selected inventory, and survives service restart", async () => {
+test("signed SYSTEM bootstrap downloads selected hosts, preserves restart state, and executes indexing status", async () => {
   const run = randomUUID();
   const root = join(process.env.ProgramData!, `OneControlNativeAcceptance-${run}`);
   const serviceRoot = join(process.env.ProgramData!, "OneControlNative");
@@ -56,34 +56,44 @@ test("signed thin installer runs as SYSTEM, downloads only selected inventory, a
     )?.address;
   if (!ip) throw new Error("Native acceptance needs an assigned private IPv4 interface");
   const origin = `https://${ip}`;
-  const candidate = join(buildRoot, "inventory");
   const now = Math.floor(Date.now() / 1000);
-  await runFile(process.execPath, [
-    "scripts/package-native-feature.mjs",
-    "--feature",
-    "inventory",
-    "--version",
-    "0.1.0",
-    "--platform",
-    "win-x64",
-    "--output",
-    candidate,
-    "--artifact-origin",
-    origin,
-    "--publisher",
-    "fixture",
-    "--issued-at",
-    String(now - 1),
-    "--expires-at",
-    String(now + 3600),
-  ]);
-  const request = JSON.parse(await readFile(join(candidate, "publisher-request.json"), "utf8"));
-  const manifest = JSON.parse(await readFile(join(candidate, "manifest.json"), "utf8"));
-  const archive = await readFile(join(candidate, "inventory-0.1.0-win-x64.zip"));
+  const artifacts: Record<
+    string,
+    { url: string; sha256: string; size: number; files: { path: string; sha256: string; size: number }[] }
+  > = {};
+  const archives = new Map<string, Buffer>();
+  for (const feature of ["inventory", "indexing"]) {
+    const candidate = join(buildRoot, feature);
+    await runFile(process.execPath, [
+      "scripts/package-native-feature.mjs",
+      "--feature",
+      feature,
+      "--version",
+      "0.1.0",
+      "--platform",
+      "win-x64",
+      "--output",
+      candidate,
+      "--artifact-origin",
+      origin,
+      "--publisher",
+      "fixture",
+      "--issued-at",
+      String(now - 1),
+      "--expires-at",
+      String(now + 3600),
+    ]);
+    const request = JSON.parse(await readFile(join(candidate, "publisher-request.json"), "utf8"));
+    const manifest = JSON.parse(await readFile(join(candidate, "manifest.json"), "utf8"));
+    const archive = await readFile(join(candidate, `${feature}-0.1.0-win-x64.zip`));
+    artifacts[feature] = { ...manifest.artifacts["win-x64"], files: request.files };
+    archives.set(`artifacts/${request.archiveSha256}/package.zip`, archive);
+  }
   const operator = randomBytes(32).toString("base64url");
   const native = await nativeFixture(operator, {
     artifactOrigin: origin,
-    artifacts: { inventory: { ...manifest.artifacts["win-x64"], files: request.files } },
+    features: ["inventory", "indexing"],
+    artifacts,
   });
   const db = await openTestDatabase();
   const app = await buildApp(
@@ -136,7 +146,8 @@ test("signed thin installer runs as SYSTEM, downloads only selected inventory, a
               },
               async get(name) {
                 downloads.push(name);
-                if (name !== `artifacts/${request.archiveSha256}/package.zip`) return null;
+                const archive = archives.get(name);
+                if (!archive) return null;
                 return {
                   size: archive.length,
                   body: new ReadableStream({
@@ -185,7 +196,9 @@ test("signed thin installer runs as SYSTEM, downloads only selected inventory, a
         catalogId: row!.catalog_id,
         enabled,
         disabled: [],
-        allowedPermissions: Object.keys(enabled).length ? ["inventory.read"] : [],
+        allowedPermissions: Object.keys(enabled).map((id) =>
+          id === "inventory" ? "inventory.read" : "indexing.manage",
+        ),
         bootstrapVersion: "0.1.0",
       },
     });
@@ -265,7 +278,7 @@ test("signed thin installer runs as SYSTEM, downloads only selected inventory, a
     ).toEqual([]);
     await selection({ inventory: "0.1.0" });
     await until(async () => !!(await status())?.lastInventory);
-    expect(downloads).toEqual([`artifacts/${request.archiveSha256}/package.zip`]);
+    expect(downloads).toEqual([`artifacts/${artifacts.inventory!.sha256}/package.zip`]);
     const [observation] = await db.query<{ kind: string }>(
       "SELECT kind FROM native_observations WHERE enrollment_id=$1",
       [enrolled!.enrollmentId],
@@ -281,13 +294,43 @@ test("signed thin installer runs as SYSTEM, downloads only selected inventory, a
     expect(
       await db.query("SELECT id FROM native_enrollments WHERE device_id=$1", [invitation.json().deviceId]),
     ).toHaveLength(1);
+    await selection({ indexing: "0.1.0" });
+    const operation = await app.inject({
+      method: "POST",
+      url: "/v1/batches",
+      headers: { ...headers, "idempotency-key": randomUUID() },
+      payload: {
+        targets: [invitation.json().deviceId],
+        ring: "canary",
+        command: { kind: "indexing.status" },
+        startsAt: new Date(Date.now() - 1000).toISOString(),
+        endsAt: new Date(Date.now() + 3600000).toISOString(),
+      },
+    });
+    expect(operation.statusCode, operation.body).toBe(201);
+    await until(async () => {
+      const [job] = await db.query<{ state: string }>("SELECT state FROM jobs WHERE batch_id=$1", [
+        operation.json().batchId,
+      ]);
+      return job?.state === "succeeded";
+    });
+    expect(downloads).toEqual([
+      `artifacts/${artifacts.inventory!.sha256}/package.zip`,
+      `artifacts/${artifacts.indexing!.sha256}/package.zip`,
+    ]);
+    const [indexResult] = await db.query<{ result: { after: { service: string; pauseMechanism: string } } }>(
+      "SELECT result FROM jobs WHERE batch_id=$1",
+      [operation.json().batchId],
+    );
+    expect(indexResult?.result.after.service).toBeTypeOf("string");
+    expect(indexResult?.result.after.pauseMechanism).toBe("service-stop-fallback");
     const previous = (await status()).lastSuccess;
     await selection({});
     await until(async () => {
       const current = await status();
       return current?.state === "connected" && current.lastSuccess !== previous;
     });
-    expect(downloads).toHaveLength(1);
+    expect(downloads).toHaveLength(2);
     const revoked = await app.inject({
       method: "POST",
       url: `/v1/scopes/${native.scopeId}/native-enrollments/${enrolled!.enrollmentId}/revoke`,

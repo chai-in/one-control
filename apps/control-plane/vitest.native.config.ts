@@ -5,7 +5,7 @@ if (process.platform !== "win32" || process.env.ONE_CONTROL_NATIVE_ACCEPTANCE !=
 export default defineConfig({
   test: {
     include: ["tests/native-install.windows.ts"],
-    testTimeout: 180_000,
+    testTimeout: 300_000,
     hookTimeout: 30_000,
     maxWorkers: 1,
   },
