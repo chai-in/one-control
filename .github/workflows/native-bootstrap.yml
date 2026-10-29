@@ -1,0 +1,70 @@
+name: Native bootstrap foundation
+on:
+  push:
+    paths:
+      - "native/**"
+      - "modules/**"
+      - "go.work"
+      - "packages/module-contracts/**"
+      - "packages/modules/**"
+      - "scripts/check-native.mjs"
+      - "scripts/tests/native-tooling.test.mjs"
+      - "package.json"
+      - "pnpm-lock.yaml"
+      - "pnpm-workspace.yaml"
+      - "tsconfig.base.json"
+      - "biome.json"
+      - ".github/workflows/native-bootstrap.yml"
+  pull_request:
+    paths:
+      - "native/**"
+      - "modules/**"
+      - "go.work"
+      - "packages/module-contracts/**"
+      - "packages/modules/**"
+      - "scripts/check-native.mjs"
+      - "scripts/tests/native-tooling.test.mjs"
+      - "package.json"
+      - "pnpm-lock.yaml"
+      - "pnpm-workspace.yaml"
+      - "tsconfig.base.json"
+      - "biome.json"
+      - ".github/workflows/native-bootstrap.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: native-bootstrap-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  native:
+    name: Native foundation on ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, macos-latest, ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+      - uses: pnpm/action-setup@f40ffcd9367d9f12939873eb1018b921a783ffaa
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444
+        with: { node-version: "24", cache: pnpm }
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16
+        with:
+          go-version: "1.27.2"
+          cache: false
+      - run: pnpm install --frozen-lockfile
+      - name: Execute native conformance and stripped bootstrap
+        run: pnpm test:native
+        env:
+          GOTOOLCHAIN: local
+      - name: Retain native measurements and diagnostics
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: native-foundation-${{ matrix.os }}
+          path: .local/orchestrate/full-build/evidence/native-checks
+          include-hidden-files: true
+          if-no-files-found: warn
+          retention-days: 7

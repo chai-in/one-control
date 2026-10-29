@@ -1,0 +1,29 @@
+# Optional native inventory host
+
+`native/cmd/oc-inventory` is a separate executable for the optional `inventory` module. It uses the existing fixed Windows inventory collector. The bootstrap and control-plane transport do not import that collector. Its fixed operation is `inventory.scan`, requiring `inventory.read` in the active policy and package manifest. It does not implement application inventory, update execution, scripts or shell access.
+
+## Host lifecycle and IPC
+
+The executable accepts only the launch arguments `--one-control-host-v1 <instance>`. It sends readiness over its inherited output pipe without collecting anything. Activation enables request handling; health and stop use the existing control messages. EOF exits the process. The module receives no control-plane URL, enrollment credential or signing key.
+
+Host messages retain version 1, instance and monotonically increasing sequence. Existing control frames are byte-compatible. Feature requests add the optional `payload` field, containing canonical unpadded base64url bytes, with types `request:<operation>` and `result:<operation>`. The frame limit is 16 KiB and decoded payload limit is 8 KiB; inventory JSON retains its existing 4 KiB limit. Legacy control-only hosts are not assumed to implement feature requests.
+
+The host accepts only an empty input for `inventory.scan`. A handler failure, invalid request or pipe failure terminates the host. Parent-side cancellation, timeout or invalid response uses the existing forced-stop and containment accounting; it does not retry an operation. Readiness does not authorize collection.
+
+`lifecycle.Manager.Invoke` requires a healthy active generation, current signed policy, selected feature/version and declared/granted permission. It holds the lifecycle owner during the request, limits execution to policy expiry and a 25-second operation budget, and returns the policy digest with the result. Failed requests record stop/unknown custody through the existing generation owner. Protected user-session execution remains separate work.
+
+`controlplane.Client.CollectInventory` calls the fixed inventory operation and checks the collection-time policy digest before preparing its durable report. A selection change cannot silently relabel an observation with new policy authority. The existing report outbox retains uncertain deliveries and reconciles exact receipts. It does not collect on startup or schedule scans; the installation/service owner must explicitly call it when this module is enabled.
+
+## Building a candidate
+
+`scripts/package-native-feature.mjs` builds a single selected feature for `win-x64` or `win-arm64`, without CGO, into a new output directory. It produces the fixed `bin/host.exe` ZIP layout, exact file/archive hashes, a planner manifest and unsigned publisher-attestation request. It does not load keys, sign, upload, publish, install or execute the host. Supply new release configuration explicitly:
+
+```powershell
+node scripts/package-native-feature.mjs --feature inventory --version 0.1.0 --platform win-x64 --output .local/inventory-candidate --artifact-url https://artifacts.example.invalid/inventory-0.1.0-win-x64.zip --publisher one-control --issued-at 1793318400 --expires-at 1793404800
+```
+
+The example URL is deliberately non-deployable; timestamps and publisher are examples. A real publication needs a configured artifact origin, current explicit validity, approved publisher signature and catalog admission. An unsigned candidate is never accepted by the delivery owner.
+
+## Current evidence
+
+The host and transport/lifecycle libraries compile on the local Windows toolchain, and a local unsigned x64 ZIP was built. Behavioral IPC, lifecycle integration, lost-receipt, permission change and actual endpoint acceptance remain pending under the current instruction to build functionality before tests. Protected installation, Windows service wiring, issuer/root rotation and the rest of the endpoint providers are not supplied by this host.

@@ -1,0 +1,6 @@
+{
+  "activeKeyId": "configure-new-key-id",
+  "keys": {
+    "configure-new-key-id": "/run/one-control-secrets/configure-new-recovery-encryption.key"
+  }
+}

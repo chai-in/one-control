@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "id": "inventory",
+  "version": "0.1.0",
+  "optional": true,
+  "defaultEnabled": false,
+  "distribution": "server-catalog",
+  "source": {
+    "server": null,
+    "console": "console",
+    "native": "native",
+    "windows": "windows"
+  },
+  "dependencies": [
+    {
+      "id": "observations",
+      "version": "0.1.0"
+    },
+    {
+      "id": "command-host",
+      "version": "0.1.0"
+    }
+  ],
+  "permissions": ["inventory.read"],
+  "endpointRelease": "not-accepted"
+}

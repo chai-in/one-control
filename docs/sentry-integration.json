@@ -1,0 +1,433 @@
+{
+  "schemaVersion": 1,
+  "recordedAt": "2026-10-30",
+  "repositories": [
+    {
+      "url": "https://github.com/chai-in/sentry-v2",
+      "revision": "b509d0939768aec9698bd3b8ae4287f3fe50d6f2",
+      "disposition": "same revision as existing V2 import"
+    },
+    {
+      "url": "https://github.com/tibcon-git/tibcon-sentry",
+      "revision": "30799e4e2e57574521ddc628b338814ac2041bf8",
+      "archivedRevision": "fdd8e206e39c0046b316c7f838e8f128684c71dc",
+      "license": "GPL-3.0-only",
+      "disposition": "scope mapped; policy, Falcon inventory/sync/event and company asset semantics adapted; remaining implementation and runtime acceptance open"
+    }
+  ],
+  "exclusions": [
+    "CRM workflows and trust-crm-desktop",
+    "Android management",
+    "AMAPI",
+    "Android companion",
+    "mobile policy/reporting/commands"
+  ],
+  "architecture": [
+    "optional modules disabled by default",
+    "PostgreSQL scoped authority instead of inherited D1/SSO runtime",
+    "fresh deployment identities and signing custody",
+    "no unbounded shell product",
+    "no automatic monitoring, DNS rewriting, USB takeover, mining or restored command replay"
+  ],
+  "adaptations": [
+    {
+      "sources": ["src/lib/desktop-policy.ts", "src/lib/desktop-policy-resolve.ts"],
+      "targets": ["modules/desktop-policies/server/policy.ts", "modules/desktop-policies/server/control.ts"]
+    },
+    {
+      "sources": [
+        "src/lib/desktop-policy-versions.ts",
+        "src/lib/desktop-policy-canary.ts",
+        "src/routes/desktop.ts"
+      ],
+      "targets": ["modules/desktop-policies/server/control.ts", "modules/desktop-policies/server/schema.ts"]
+    },
+    {
+      "sources": ["src/lib/falcon.ts"],
+      "targets": ["modules/falcon/server/inventory.ts"]
+    },
+    {
+      "sources": ["src/routes/inventory.ts"],
+      "targets": ["modules/asset-management/server/control.ts", "modules/asset-management/server/schema.ts"]
+    },
+    {
+      "sources": ["src/lib/falcon.ts", "src/routes/falcon-webhook.ts"],
+      "targets": [
+        "modules/falcon-sync/server/data.ts",
+        "modules/falcon-sync/server/schema.ts",
+        "modules/falcon-sync/server/http.ts"
+      ]
+    },
+    {
+      "sources": ["src/lib/ingest-desktop.ts", "src/routes/desktop.ts"],
+      "targets": [
+        "modules/recovery-escrow/server/escrow.ts",
+        "modules/recovery-escrow/console/RecoveryKeysPanel.tsx"
+      ]
+    }
+  ],
+  "sourceFiles": [
+    {
+      "path": "agent/crates/core/src/agent.rs",
+      "gitBlob": "b2fceff324e684066c70e24437ae8da871dbe177",
+      "sha256": "bfcc786f23f7c3d45bee277e15074d529828e5ef6de18264461e0127fbbdda0a"
+    },
+    {
+      "path": "agent/crates/core/src/command.rs",
+      "gitBlob": "ec35d36c3d8ae1fb111ecaabb0b8396d75e8036a",
+      "sha256": "0c6f67dc95c42fcec7f02b68cae6acfc312b0e190ac08737411391d23b87d223"
+    },
+    {
+      "path": "agent/crates/core/src/config.rs",
+      "gitBlob": "8150916c8e6e5bcb158b35b283fced57e880f3b0",
+      "sha256": "b43b76b9483ec86c0a56779b6e0d4f85a4fb8d548a3c2d5d9c36a0e471a78291"
+    },
+    {
+      "path": "agent/crates/core/src/crypto.rs",
+      "gitBlob": "03aedffd08e6caa61f6ffa86ff93c9cefb530db8",
+      "sha256": "4c21d5e590fd3cfa9f3c4888b2ac48738886ca6ce1023c811b7e7700be4e0735"
+    },
+    {
+      "path": "agent/crates/core/src/error.rs",
+      "gitBlob": "6ee4acf8805c6ae4e81ea595055da5f2cd8cff76",
+      "sha256": "0fa83627155fbf70f54c5fa85649aec0939d6ec55704d6320b20193d5ed6e1a3"
+    },
+    {
+      "path": "agent/crates/core/src/lib.rs",
+      "gitBlob": "725086baf411411127ef43dca0e39814db636b12",
+      "sha256": "65910415accb4244c5988ada2b9c3ae78b2b277e07c4d321d3d44e1418947012"
+    },
+    {
+      "path": "agent/crates/core/src/logging.rs",
+      "gitBlob": "22e67c0dd820495c98ed93df1bc4df1142c69e62",
+      "sha256": "378962e3274087a76c8799a836156bfc7bdb89f6fd174e00f8cceb57be6fa4b4"
+    },
+    {
+      "path": "agent/crates/core/src/platform.rs",
+      "gitBlob": "a0f6b8920633a26f59aa02641a77537839e8eeb7",
+      "sha256": "beb416aba307c48941ef7dcca1da5e3c2d496b83ac9a7a39cef5646683d7edc9"
+    },
+    {
+      "path": "agent/crates/core/src/policy.rs",
+      "gitBlob": "aee1288c42300675a3a78c8430656f1e8b762f5f",
+      "sha256": "0659eae983b3d52d633764abf8199a53c6064ce2f0eac3aa4a2394582963ca34"
+    },
+    {
+      "path": "agent/crates/core/src/posture.rs",
+      "gitBlob": "0b5f6ab470416b707e31f2c4001a22f74e5283fa",
+      "sha256": "81c4b268775121d669b3f30f18e20051311f34b9e747830a73963c59a9fb2f8f"
+    },
+    {
+      "path": "agent/crates/core/src/protocol.rs",
+      "gitBlob": "766cb7f65ea5c06fe5c89e299570f76149268980",
+      "sha256": "b16786cd4db9594d2aeea425f6856cc8c8ef28c9677fb328c481dd75b1cd5e00"
+    },
+    {
+      "path": "agent/crates/core/src/report.rs",
+      "gitBlob": "6748447c6411fd4b6a0afb7b61cc04d79302b8c0",
+      "sha256": "a8ef292d42b5779be6c916b667656bdd9d5ae026950bb9ce376526f97de5bfab"
+    },
+    {
+      "path": "agent/crates/core/src/version.rs",
+      "gitBlob": "b9c29bdd444a0712f792ef6601bf040f772c0241",
+      "sha256": "5af50a02b8c786b623aef79d44b1f14afb1c552f514cf6a98e8fa0cfe2a064af"
+    },
+    {
+      "path": "agent/crates/win/src/appcontrol.rs",
+      "gitBlob": "7099c2aa7ae67d72149209a13554bf3965e9b569",
+      "sha256": "594220a703b2729e0417629e0a9eea89f7af6972afb3d4afd49e6e1b69cda031"
+    },
+    {
+      "path": "agent/crates/win/src/bitlocker.rs",
+      "gitBlob": "952341244839525b2d94b08cac6dd47563b15eab",
+      "sha256": "5fc3006ab2fe3581fdae62b84fae1c8354c29921b7b471edcc85fe54ad239a08"
+    },
+    {
+      "path": "agent/crates/win/src/dns.rs",
+      "gitBlob": "5179fc0cb3e72b85327cfbeb234bdaf80b52787c",
+      "sha256": "f47db1a3541219a495e684b7df83dd9a57fe5d6ef07a5a80fc512fb2385a4284"
+    },
+    {
+      "path": "agent/crates/win/src/http.rs",
+      "gitBlob": "c4e9a13fa4eda4ddbbff51dcf1672810c93f3457",
+      "sha256": "5efa17c20e4e0eb4a631e188ae541e262011f58323cb9531bb527a87f5f26993"
+    },
+    {
+      "path": "agent/crates/win/src/identity.rs",
+      "gitBlob": "ecbb7726057a72eb0380d15cc7949cc00af52518",
+      "sha256": "fa8fdf2ae50085da514d0fabfb3102d1fc1d4e0d790bd3f55b20f73010ed689e"
+    },
+    {
+      "path": "agent/crates/win/src/inventory.rs",
+      "gitBlob": "39e6df6894fc6bfeae0c6503589521b2534c9c61",
+      "sha256": "934c033f4dfa31f7b1e735d305543978f7c1c8f1a3d370482d8cbf0e1be4666b"
+    },
+    {
+      "path": "agent/crates/win/src/lib.rs",
+      "gitBlob": "81b70a2bfd186993c9c8d1261885f5af722b1274",
+      "sha256": "ac311f158012897294089604000d67d5b593198651039fe1798fd975f861fe34"
+    },
+    {
+      "path": "agent/crates/win/src/monitor/capture.rs",
+      "gitBlob": "d31d40b461a877d75c72dd23c155681c3a3a9c82",
+      "sha256": "241b6237bea1e2545f5386a9fcdf9e62b0d718437d07d07f0c966f0d739293a9"
+    },
+    {
+      "path": "agent/crates/win/src/monitor/ipc.rs",
+      "gitBlob": "96b34a4ae0f10a63239ee9f1af4b3e6e9c53fc8e",
+      "sha256": "e78d90e8b558548b0ec153ac0785312235e62a8a7bc1fc8b574b1e448e19fd33"
+    },
+    {
+      "path": "agent/crates/win/src/monitor/mod.rs",
+      "gitBlob": "d6259a6d5f117f1c33116cc3d06c981780a0fca3",
+      "sha256": "821aba087494aaf30f9dc7e4a4113dddc653152814865a4500e5f10f84e64014"
+    },
+    {
+      "path": "agent/crates/win/src/monitor/pointer.rs",
+      "gitBlob": "f14a8dee77c756323d5de157ca9add8d5afd9f44",
+      "sha256": "4826fc115ff425a4a0b66c8bce8601ee8774d104cbe5348bed45beb3377c2d27"
+    },
+    {
+      "path": "agent/crates/win/src/monitor/session.rs",
+      "gitBlob": "702dd12d3ce698278b5f1ee5451c1197dc4ef70f",
+      "sha256": "1ce11d97109bd78c597ef8ac3ba5bb5d6629db538aeeeedeb1ec029ca524f4d5"
+    },
+    {
+      "path": "agent/crates/win/src/monitor/tray.rs",
+      "gitBlob": "78fcae2831d989e3ba93468c11678d58a7a2f465",
+      "sha256": "3808fc9eda391d6d40d7a1052efb7288ff8fe1ce839a055302aefd2cf639190d"
+    },
+    {
+      "path": "agent/crates/win/src/paths.rs",
+      "gitBlob": "b71dce654d8b9c9fd0474d6175ea1b7e7cbcc4af",
+      "sha256": "1dec0d26adb2e27b837c0a25cd382ac4a4c5b9d923cdc5fc107a10ad683bcdd7"
+    },
+    {
+      "path": "agent/crates/win/src/platform.rs",
+      "gitBlob": "0d188aa277964d0098661943d708b142351f8496",
+      "sha256": "6d795819972984a0f3bf5c2787e9f247f844f102dfa97447c30a51ea70c1fb01"
+    },
+    {
+      "path": "agent/crates/win/src/reg.rs",
+      "gitBlob": "4b59ff7ac3bacd5508864add4ee312779a44d4ee",
+      "sha256": "13c23d2b2bd671ac56d1d6e67a71489ead489de12c6c1ff022f7772d3ac9e9d4"
+    },
+    {
+      "path": "agent/crates/win/src/remote.rs",
+      "gitBlob": "549982a244a85c5ccc6804afab3f4d2eba2f42e6",
+      "sha256": "0600d1c7a18b1fe976c193185e4f39deeeddcbb4c659fc93ee6ba7c7e97043fd"
+    },
+    {
+      "path": "agent/crates/win/src/selfprotect.rs",
+      "gitBlob": "112be0c31f634d1a65145f4eb5a6c81e3cfca95d",
+      "sha256": "99581a314f602de69a4fa06554d73e4c384f88f03722dae35ecb6b1d8cd96dcc"
+    },
+    {
+      "path": "agent/crates/win/src/selfupdate.rs",
+      "gitBlob": "831b07fbe244cb406fd8bb25cc86a5103fba181f",
+      "sha256": "e1881784715e19894de6f633c1a48b2b70ce778d1b68a96e68339f3fda0d8f7b"
+    },
+    {
+      "path": "agent/crates/win/src/storage.rs",
+      "gitBlob": "18f277670ad190befaf6a3bfce4c125c6c0d589a",
+      "sha256": "b4c9d3255680b681876d75461323d2cbe808b11801d5529e76275a5ac8e075ee"
+    },
+    {
+      "path": "agent/crates/win/src/update.rs",
+      "gitBlob": "5dd6004a8ffdf34c8c969247b28d855e60731f45",
+      "sha256": "7c15eead70ca4179247fa1bcd327f07fb80ecbe8e4e44c2efb071da6af6d47fb"
+    },
+    {
+      "path": "agent/crates/win/src/updateposture.rs",
+      "gitBlob": "f1f2a25e73decbba125f1630b0329c89779028db",
+      "sha256": "5a562ea1a7b3ce303c473bab780c37e93d1b5df6549afd4c11c575a796e8bd0c"
+    },
+    {
+      "path": "agent/crates/win/src/usb.rs",
+      "gitBlob": "5d341df7fb5f423a4a6827ef57f5ae16d0675bf2",
+      "sha256": "0807fb8ba1e14cc4dbfa55516cdc91dd47fd00936f9cb33006b99812becd33fe"
+    },
+    {
+      "path": "agent/crates/win/src/util.rs",
+      "gitBlob": "cdbe66c677f1676592aa81492fd26ffd137ec088",
+      "sha256": "0fe316a816bb4e4b3ffaf77d1a12709e7f06d4f7a207dc91b1a7cbfd3593b63d"
+    },
+    {
+      "path": "agent/crates/win/src/wmi.rs",
+      "gitBlob": "9949b5af442993b769dbcfdc283c5d24f0a5eec0",
+      "sha256": "d9f2f7feeaff1a69358217e97de2b503323ff67a8c39b3f503507e735a72da0c"
+    },
+    {
+      "path": "src/lib/asset-link.ts",
+      "gitBlob": "1cc1d0c98be079466d2b5f0c1f17b6bb0f649f41",
+      "sha256": "0fe951c8bb8e479df26f29ffed25fa5c995955ad568377893d13f187c2f32e85"
+    },
+    {
+      "path": "src/lib/desktop-agent-versions.ts",
+      "gitBlob": "828afd6dcda482ba42d84a1cd76f97074fb13d2e",
+      "sha256": "0202f2e2f0aa530e862b30b8c7dce931e686585b62d28b4a40bce46dd0f71e3c"
+    },
+    {
+      "path": "src/lib/desktop-commands.ts",
+      "gitBlob": "32924b7f2642aad35422409fec792d84dfe0cd7c",
+      "sha256": "e8d40e4b9a91619065c7dae0d6f63c89f7bf19631b50e0cc27878d34a6b7b7ff"
+    },
+    {
+      "path": "src/lib/desktop-deployment.ts",
+      "gitBlob": "5c0f407ddcc5d290f61668548fa48ffe5289b1fd",
+      "sha256": "5f49dfc44cf955810eeb0542ca12db71bb9cfa1669e868474f4f94a849a2641e"
+    },
+    {
+      "path": "src/lib/desktop-hosts.ts",
+      "gitBlob": "001a3a1266c2917d202192d6b04bc94a91f4d987",
+      "sha256": "fdd24e5702d7fcfe340271a8798eb7279bc96d8b461266d327c4cc6996a508b4"
+    },
+    {
+      "path": "src/lib/desktop-policy-canary.ts",
+      "gitBlob": "ec6c2ab2e5152c50fc9bf7bd4c26de49e799f4f0",
+      "sha256": "bd52ae6837066c461c80f28455921ccb3dac5fd60e65f4947ec7a9ea065d2ce7"
+    },
+    {
+      "path": "src/lib/desktop-policy-resolve.ts",
+      "gitBlob": "19e22c31c8ffb85d89f6aff63bf076e06e8291a6",
+      "sha256": "f19a1dd028032a5166faf06df093ca51acbb9e68ba61bbf5438169b4a941bc25"
+    },
+    {
+      "path": "src/lib/desktop-policy-store.ts",
+      "gitBlob": "5497392924036ffc30d93b77162228c56bd4c960",
+      "sha256": "a188ec707624bc2e80a612197a2e4e3b4728e60b03913393a3c27767d0833716"
+    },
+    {
+      "path": "src/lib/desktop-policy-versions.ts",
+      "gitBlob": "a2bc07d3e364133143521eae48f6b2981e37333a",
+      "sha256": "e56008588d08e873c18654de9ef86ee339bf72a091af53042cded2018c807cca"
+    },
+    {
+      "path": "src/lib/desktop-policy.ts",
+      "gitBlob": "178e4fff4c8903143ab2471cfa2a7485f0c53338",
+      "sha256": "e97f2e9de60054956463dabc9e5ca072026832842d6fbabc2d2dc1207dfe03f9"
+    },
+    {
+      "path": "src/lib/desktop-retention.ts",
+      "gitBlob": "93bc0adda18f500d525ef7038813254d21f8561c",
+      "sha256": "bd09d61c72c26a669c75c7d6056ff069bec9c6f23d8951843129a5ae2ac86aae"
+    },
+    {
+      "path": "src/lib/desktop-webfilter.ts",
+      "gitBlob": "1d5d2647b7132c037a792396ad0de5cc8b16d6ef",
+      "sha256": "e737074211ae4571506f64cdc6c8b1c1c57b7f2984eb9608273d6c45ae611639"
+    },
+    {
+      "path": "src/lib/ema-auth.ts",
+      "gitBlob": "7d6c48d1f6921a0d97fa4332deef7e2b804bb6f2",
+      "sha256": "0f7e0c92e6b45c9fc58774fa345f0e75e1239693afaba3118c42118ba8146982"
+    },
+    {
+      "path": "src/lib/ema-deployment.ts",
+      "gitBlob": "7bc7dab08baa47c24e8e8b9a3af479323939bf20",
+      "sha256": "5b1197b7aa161813d3918bf9bd9b14093fad38ad4d29f4f7854071b30aa12424"
+    },
+    {
+      "path": "src/lib/ema.ts",
+      "gitBlob": "f167b4bc9247a9dad55cc4da5a371bcd73fc4d7e",
+      "sha256": "dbfe953ecf04e12ea986165a24a6f952b860b50cc045019228768e037b1b1f8b"
+    },
+    {
+      "path": "src/lib/falcon-auth.ts",
+      "gitBlob": "fc4c6e0fecf1b4279976bb30713a8bb72cd5c47a",
+      "sha256": "ecfffaf12a707e0326517298ee7313aeb7fde1e9dce2a14490d17a5a1465f5d5"
+    },
+    {
+      "path": "src/lib/falcon-sync.ts",
+      "gitBlob": "f3aaf7e306722920e085b451cf7bebd49407690f",
+      "sha256": "40f514a6cbaa82cc33af6b6d4240cd7d58316da83d8fdc6758b7e0943c164f88"
+    },
+    {
+      "path": "src/lib/falcon-webhook.ts",
+      "gitBlob": "adf2ce42a245cfecc7a1679363a30ac7fdfebfdf",
+      "sha256": "7453bc11301b6b68c96f77cb6c202365bd258b4201a046b66bcf87a0328e145f"
+    },
+    {
+      "path": "src/lib/falcon.ts",
+      "gitBlob": "503060b3b478314fbe91c067fc2860a79c0966c6",
+      "sha256": "8a37c2be28e74695dd7e29195317001e895bdbffc3c722029ee7606c6dd3b6c9"
+    },
+    {
+      "path": "src/lib/host-identity.ts",
+      "gitBlob": "1f0c48808585975d0a4f0e2372dde352eef6c50b",
+      "sha256": "941c50435b021ec0b95126c27c3c6db3bd303a85500043dc5ace1709bf34b24c"
+    },
+    {
+      "path": "src/lib/ingest-desktop.ts",
+      "gitBlob": "d5651511cd589cae22b4a18f6a03d7633306023b",
+      "sha256": "0749c23961777a758ccf2261f972a3317701671bd7ed5f81f7c293fb58fbe37c"
+    },
+    {
+      "path": "src/lib/ingest-falcon.ts",
+      "gitBlob": "279e5f93e365c3af4f5e2e2dc860a5b4fbf80364",
+      "sha256": "c8597dad955433e7fa32277b9f027cf4c7ea2e7f2c39364675c6bba4a9a13496"
+    },
+    {
+      "path": "src/routes/desktop-hosts.ts",
+      "gitBlob": "1f16b356484e88b622e12383d45a2013579963e6",
+      "sha256": "cce1beab6933ae8f8e16e46438be940303e643b0fbfaeb0743c92492b02913d2"
+    },
+    {
+      "path": "src/routes/desktop.ts",
+      "gitBlob": "ed1702bd59a7103fc7e827d48a3cc17621ba9342",
+      "sha256": "70abda736e265bddf7997bd829c8d70397cd8230e91c1bd8be3d11ce33b97db3"
+    },
+    {
+      "path": "src/routes/ema-deployments.ts",
+      "gitBlob": "5a430f9eab80ea5489a7c5a15235d62911939fc0",
+      "sha256": "ed33826cd1daf98a5dc0a62a98dcc61443746d71690ed604d60d398584b148b9"
+    },
+    {
+      "path": "src/routes/falcon-webhook.ts",
+      "gitBlob": "5e0e6b60f681473958641be186890405c9546249",
+      "sha256": "a8013d0dd46a073ef705e48ad18689c5d2b5a72b834b590fb23d0e7ff7af6bfa"
+    },
+    {
+      "path": "src/routes/falcon.ts",
+      "gitBlob": "a17fa1a2916aa88d5e7913cc16ee929ae0354b92",
+      "sha256": "26f0e07102eaa043f28e85a1947d8e3212797ed80fc465d0186925831a5e99ed"
+    },
+    {
+      "path": "src/routes/inventory.ts",
+      "gitBlob": "e99aa5ddc714f3ef99e682ab3a6c6c64d537ff57",
+      "sha256": "cc62e3c3748ed75f5b8ddb3b1c1cd1cb0ce73bd0c352fa58939cbb015ac412b8"
+    }
+  ],
+  "routeCount": 99,
+  "featureIds": {
+    "policy-library": "OC-SENTRY-001",
+    "policy-assignment": "OC-SENTRY-002",
+    "policy-canary": "OC-SENTRY-003",
+    "desktop-inventory": "OC-SENTRY-004",
+    "application-control": "OC-SENTRY-005",
+    "web-filtering": "OC-SENTRY-006",
+    "bitlocker": "OC-SENTRY-007",
+    "key-escrow": "OC-SENTRY-008",
+    "device-control": "OC-SENTRY-009",
+    "activity-monitoring": "OC-SENTRY-010",
+    "screenshots": "OC-SENTRY-011",
+    "telemetry-retention": "OC-SENTRY-012",
+    "remote-actions": "OC-SENTRY-013",
+    "tamper-uninstall": "OC-SENTRY-014",
+    "enrollment-deployment": "OC-SENTRY-015",
+    "agent-rollout": "OC-SENTRY-016",
+    "falcon-inventory": "OC-SENTRY-017",
+    "falcon-ingestion": "OC-SENTRY-018",
+    "falcon-response": "OC-SENTRY-019",
+    "ema-inventory": "OC-SENTRY-020",
+    "ema-control": "OC-SENTRY-021",
+    "ema-deployment": "OC-SENTRY-022",
+    "assets-people": "OC-SENTRY-023",
+    "host-reconciliation": "OC-SENTRY-024",
+    "desktop-console": "OC-SENTRY-025",
+    "native-reporting": "OC-SENTRY-026",
+    "agent-protection": "OC-SENTRY-027",
+    "source-provenance": "OC-SENTRY-028"
+  },
+  "verification": "Source inspection and compiler feedback only. No feature parity, production endpoint or current behavioral acceptance claim."
+}

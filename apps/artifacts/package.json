@@ -1,0 +1,11 @@
+{
+  "name": "@one-control/artifacts",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "build": "tsc --outDir dist",
+    "test": "pnpm build && node --test tests/*.test.mjs"
+  },
+  "license": "AGPL-3.0-only"
+}

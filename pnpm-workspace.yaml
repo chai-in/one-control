@@ -1,0 +1,8 @@
+packages:
+  - apps/*
+  - packages/*
+  - modules/*
+  - '!modules/mining'
+allowBuilds:
+  esbuild: true
+minimumReleaseAge: 1440

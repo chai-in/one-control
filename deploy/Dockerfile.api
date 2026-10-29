@@ -1,0 +1,13 @@
+FROM node:24-bookworm-slim AS build
+WORKDIR /app
+RUN corepack enable && corepack prepare pnpm@11.25.0 --activate
+COPY . .
+RUN pnpm install --frozen-lockfile && pnpm --filter @one-control/control-plane... build
+
+FROM node:24-bookworm-slim
+ENV NODE_ENV=production HOST=0.0.0.0
+WORKDIR /app
+COPY --from=build --chown=node:node /app /app
+USER node
+EXPOSE 4317
+CMD ["node", "apps/control-plane/dist/apps/control-plane/src/main.js"]

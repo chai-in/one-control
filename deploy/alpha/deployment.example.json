@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "profile": "disposable-rehearsal",
+  "consoleOrigin": "https://REQUIRED_CONSOLE_HOST",
+  "oidc": {
+    "issuer": "https://REQUIRED_EXACT_ISSUER",
+    "publicClientId": "REQUIRED_PUBLIC_CLIENT_ID",
+    "audience": "REQUIRED_API_AUDIENCE",
+    "operatorSubjects": ["REQUIRED_OPERATOR_SUBJECT"],
+    "approverSubjects": ["REQUIRED_APPROVER_SUBJECT"],
+    "viewerSubjects": []
+  },
+  "images": {
+    "api": "REQUIRED_API_IMAGE_AT_SHA256_DIGEST",
+    "console": "REQUIRED_CONSOLE_IMAGE_AT_SHA256_DIGEST"
+  },
+  "database": {
+    "runtimeRole": "REQUIRED_RUNTIME_ROLE",
+    "migrationRole": "REQUIRED_MIGRATION_ROLE",
+    "runtimeDdl": "forbidden",
+    "migrationExecution": "explicit-one-shot"
+  },
+  "releasePublicKeyFile": "REQUIRED_ABSOLUTE_PUBLIC_KEY_PATH",
+  "artifactHosts": ["REQUIRED_ARTIFACT_HOST"],
+  "deployment": { "stage": "poc", "deviceLimit": 5 }
+}

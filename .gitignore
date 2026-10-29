@@ -1,0 +1,41 @@
+# The complete, byte-verified snapshot is preserved in the Git LFS transfer ZIP.
+# Keep the extracted review copy locally without duplicating it in Git history.
+/legacy sentry/snapshot/
+
+# Company-only feature implementation and local release material.
+/modules/mining/
+/private/
+/native/*.exe
+/native/oc-bootstrap
+go.work.sum
+
+# Runtime state, credentials and generated files are never source artifacts.
+.env
+.env.*
+!.env.example
+*.pfx
+*.p12
+*-recovery-key.txt
+node_modules/
+bin/
+obj/
+.local/
+.DS_Store
+Thumbs.db
+.tools/
+dist/
+coverage/
+TestResults/
+*.user
+*.key
+*.pem
+*.db
+*.db-*
+*.log
+/apps/artifacts/wrangler.jsonc
+
+# Private repository custody material is never part of public history.
+/legacy sentry/
+*.bundle
+*.zip
+*.7z

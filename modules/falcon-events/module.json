@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "id": "falcon-events",
+  "version": "0.1.0",
+  "optional": true,
+  "defaultEnabled": false,
+  "distribution": "server-catalog",
+  "source": {
+    "server": "server",
+    "console": null,
+    "native": null,
+    "windows": null
+  },
+  "dependencies": [
+    {
+      "id": "falcon",
+      "version": "0.1.0"
+    }
+  ],
+  "permissions": ["falcon.events"],
+  "endpointRelease": "not-accepted"
+}

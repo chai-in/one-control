@@ -1,0 +1,16 @@
+One Control
+
+Original One Control source is licensed under the GNU Affero General Public
+License, version 3 only (SPDX-License-Identifier: AGPL-3.0-only). See LICENSE.
+
+The public distribution does not include company-only modules, credentials,
+deployment state, or historical company transfer archives.
+
+TIBCON Sentry adaptations identified in docs/sentry-integration.json retain
+their GPL-3.0-only notices and the license in
+third_party/licenses/TIBCON-Sentry-GPL-3.0.txt. These components are combined
+with One Control under the compatibility provisions in section 13 of GPLv3
+and AGPLv3; this does not replace their original copyright or license notices.
+
+Third-party dependencies retain their respective licenses. Release artifacts
+must include their applicable notices and corresponding source information.

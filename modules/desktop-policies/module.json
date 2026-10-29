@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "id": "desktop-policies",
+  "version": "0.1.0",
+  "optional": true,
+  "defaultEnabled": false,
+  "distribution": "server-catalog",
+  "source": {
+    "server": "server",
+    "console": "console",
+    "native": null,
+    "windows": null
+  },
+  "dependencies": [],
+  "permissions": ["desktop.policy"],
+  "endpointRelease": "not-accepted"
+}

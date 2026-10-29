@@ -1,0 +1,10 @@
+<Solution>
+  <Folder Name="/agent/">
+    <Project Path="agent/OneControl.Agent.Broker/OneControl.Agent.Broker.csproj" />
+    <Project Path="agent/OneControl.Agent.Core/OneControl.Agent.Core.csproj" />
+    <Project Path="agent/OneControl.Agent.Provision/OneControl.Agent.Provision.csproj" />
+    <Project Path="agent/OneControl.Agent.Recovery/OneControl.Agent.Recovery.csproj" />
+    <Project Path="agent/OneControl.Agent.Service/OneControl.Agent.Service.csproj" />
+    <Project Path="agent/OneControl.Agent.Tests/OneControl.Agent.Tests.csproj" />
+  </Folder>
+</Solution>

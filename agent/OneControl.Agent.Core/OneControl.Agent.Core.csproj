@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.13" />
+    <PackageReference Include="System.Security.Cryptography.ProtectedData" Version="10.0.13" />
+    <PackageReference Include="System.ServiceProcess.ServiceController" Version="10.0.13" />
+    <PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3" Version="3.0.5" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="../../modules/inventory/windows/HardwareInventory.cs" Link="Modules/inventory/windows/HardwareInventory.cs" />
+    <Compile Include="../../modules/inventory/windows/Inventory.cs" Link="Modules/inventory/windows/Inventory.cs" />
+    <Compile Include="../../modules/inventory/windows/InventoryDiagnostics.cs" Link="Modules/inventory/windows/InventoryDiagnostics.cs" />
+    <Compile Include="../../modules/windows-updates/windows/WindowsUpdates.cs" Link="Modules/windows-updates/windows/WindowsUpdates.cs" />
+    <Compile Include="../../modules/application-updates/windows/UserPackageCommand.cs" Link="Modules/application-updates/windows/UserPackageCommand.cs" />
+    <Compile Include="../../modules/deployment/windows/ReleaseInstaller.cs" Link="Modules/deployment/windows/ReleaseInstaller.cs" />
+    <Compile Include="../../modules/deployment/windows/ReleaseArtifact.cs" Link="Modules/deployment/windows/ReleaseArtifact.cs" />
+    <Compile Include="../../modules/bootstrap-update/windows/WindowsAgentUpdate.cs" Link="Modules/bootstrap-update/windows/WindowsAgentUpdate.cs" />
+    <Compile Include="../../modules/bootstrap-update/windows/AgentUpdate.cs" Link="Modules/bootstrap-update/windows/AgentUpdate.cs" />
+    <Compile Include="../../modules/bootstrap-update/windows/AgentRecovery.cs" Link="Modules/bootstrap-update/windows/AgentRecovery.cs" />
+    <Compile Include="../../modules/bootstrap-update/windows/AgentServiceControl.cs" Link="Modules/bootstrap-update/windows/AgentServiceControl.cs" />
+    <Compile Include="../../modules/bootstrap-update/windows/AgentHealth.cs" Link="Modules/bootstrap-update/windows/AgentHealth.cs" />
+    <Compile Include="../../modules/user-session-host/windows/SessionBroker.cs" Link="Modules/user-session-host/windows/SessionBroker.cs" />
+    <Compile Include="../../modules/user-session-host/windows/InteractiveSessions.cs" Link="Modules/user-session-host/windows/InteractiveSessions.cs" />
+  </ItemGroup>
+</Project>

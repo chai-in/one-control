@@ -1,0 +1,37 @@
+{
+  "name": "@one-control/console",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 127.0.0.1 --port 4318",
+    "build": "tsc --noEmit && vite build",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@fontsource/dm-sans": "^5.3.0",
+    "@fontsource/manrope": "^5.3.0",
+    "@one-control/protocol": "workspace:*",
+    "lucide-react": "^1.56.0",
+    "oidc-client-ts": "^3.5.0",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
+    "@one-control/feature-asset-management": "workspace:*",
+    "@one-control/feature-desktop-policies": "workspace:*",
+    "@one-control/feature-ema": "workspace:*",
+    "@one-control/feature-falcon": "workspace:*",
+    "@one-control/feature-falcon-sync": "workspace:*",
+    "@one-control/feature-inventory": "workspace:*",
+    "@one-control/feature-native-dispatch": "workspace:*",
+    "@one-control/feature-native-distribution": "workspace:*",
+    "@one-control/feature-native-observations": "workspace:*",
+    "@one-control/feature-recovery-escrow": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^6.1.2",
+    "vite": "^8.3.4"
+  },
+  "license": "AGPL-3.0-only"
+}

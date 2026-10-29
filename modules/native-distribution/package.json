@@ -1,0 +1,15 @@
+{
+  "name": "@one-control/feature-native-distribution",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "license": "AGPL-3.0-only",
+  "dependencies": {
+    "react": "^19.3.0",
+    "@one-control/module-contracts": "workspace:*",
+    "fastify": "^5.12.7",
+    "zod": "^4.6.7",
+    "@one-control/modules": "workspace:*",
+    "@types/react": "^19.3.0"
+  }
+}

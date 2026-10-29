@@ -1,0 +1,17 @@
+.git
+legacy sentry
+modules/mining
+private
+docs
+.env*
+.tools
+.local
+node_modules
+**/node_modules
+**/bin
+**/obj
+**/dist
+**/coverage
+*.pfx
+*.key
+*.pem

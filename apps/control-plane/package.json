@@ -1,0 +1,53 @@
+{
+  "name": "@one-control/control-plane",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx --env-file=../../.env src/main.ts",
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "start": "node dist/apps/control-plane/src/main.js",
+    "migrate": "tsx src/migrate.ts"
+  },
+  "dependencies": {
+    "@electric-sql/pglite": "^0.5.9",
+    "@fastify/rate-limit": "^11.2.1",
+    "@one-control/protocol": "workspace:*",
+    "@one-control/module-contracts": "workspace:*",
+    "@one-control/modules": "workspace:*",
+    "fastify": "^5.12.7",
+    "jose": "^6.2.12",
+    "pg": "^8.23.1",
+    "zod": "^4.6.7",
+    "@one-control/feature-application-updates": "workspace:*",
+    "@one-control/feature-asset-management": "workspace:*",
+    "@one-control/feature-command-host": "workspace:*",
+    "@one-control/feature-deployment": "workspace:*",
+    "@one-control/feature-desktop-policies": "workspace:*",
+    "@one-control/feature-ema": "workspace:*",
+    "@one-control/feature-falcon": "workspace:*",
+    "@one-control/feature-falcon-events": "workspace:*",
+    "@one-control/feature-falcon-sync": "workspace:*",
+    "@one-control/feature-integration-http": "workspace:*",
+    "@one-control/feature-inventory": "workspace:*",
+    "@one-control/feature-native-dispatch": "workspace:*",
+    "@one-control/feature-native-distribution": "workspace:*",
+    "@one-control/feature-native-observations": "workspace:*",
+    "@one-control/feature-observations": "workspace:*",
+    "@one-control/feature-rdp": "workspace:*",
+    "@one-control/feature-recovery-escrow": "workspace:*",
+    "@one-control/feature-store-updates": "workspace:*",
+    "@one-control/feature-wake-relay": "workspace:*",
+    "@one-control/feature-windows-updates": "workspace:*",
+    "@one-control/feature-bootstrap-update": "workspace:*",
+    "@one-control/feature-user-session-host": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/pg": "^8.23.1",
+    "tsx": "^4.23.15",
+    "vitest": "^5.0.4"
+  },
+  "license": "AGPL-3.0-only"
+}

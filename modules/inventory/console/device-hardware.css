@@ -1,0 +1,60 @@
+.hardware-section {
+  margin: 24px 0;
+}
+.disk-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+}
+.disk-card {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fbfdfd;
+  padding: 16px;
+}
+.disk-heading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}
+.disk-heading > svg {
+  color: #087c83;
+}
+.disk-heading .ring {
+  font-size: 9px;
+  padding: 4px 6px;
+}
+.disk-format {
+  margin-left: auto;
+  color: #607580;
+  font-size: 10px;
+}
+.disk-values {
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+  font-size: 12px;
+  margin: 17px 0 8px;
+}
+.disk-values > span {
+  color: #607580;
+  font-size: 11px;
+}
+.disk-card meter {
+  display: block;
+  width: 100%;
+  height: 13px;
+}
+.native-dialog .disk-warning {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: #8e610a;
+  margin: 8px 0 0;
+}
+.inventory-scope {
+  margin: -4px 0 18px;
+  font-size: 11px;
+}

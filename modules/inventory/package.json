@@ -1,0 +1,12 @@
+{
+  "name": "@one-control/feature-inventory",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "license": "AGPL-3.0-only",
+  "dependencies": {
+    "lucide-react": "^1.56.0",
+    "@types/react": "^19.3.0",
+    "react": "^19.3.0"
+  }
+}

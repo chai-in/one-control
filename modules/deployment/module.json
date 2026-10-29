@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "id": "deployment",
+  "version": "0.1.0",
+  "optional": true,
+  "defaultEnabled": false,
+  "distribution": "server-catalog",
+  "source": {
+    "server": "server",
+    "console": null,
+    "native": null,
+    "windows": "windows"
+  },
+  "dependencies": [
+    {
+      "id": "command-host",
+      "version": "0.1.0"
+    }
+  ],
+  "permissions": ["packages.install"],
+  "endpointRelease": "not-accepted"
+}

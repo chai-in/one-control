@@ -1,0 +1,23 @@
+{
+  "$schema": "https://biomejs.dev/schemas/2.5.15/schema.json",
+  "files": {
+    "includes": [
+      "**",
+      "!**/bin",
+      "!**/obj",
+      "!**/dist",
+      "!**/coverage",
+      "!.tools",
+      "!legacy sentry",
+      "!modules/mining",
+      "!docs/sentry-v2-import.json",
+      "!**/.local",
+      "!pnpm-lock.yaml",
+      "!packages/modules/fixtures/planner.json",
+      "!**/packages.lock.json",
+      "!**/publish.packages.lock.json"
+    ]
+  },
+  "formatter": { "indentStyle": "space", "lineWidth": 110 },
+  "linter": { "enabled": true, "rules": { "preset": "recommended" } }
+}

@@ -1,0 +1,36 @@
+{
+  "name": "one-control",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@11.25.0",
+  "engines": {
+    "node": ">=24 <27"
+  },
+  "scripts": {
+    "dev": "pnpm --filter @one-control/protocol build && pnpm --filter @one-control/module-contracts build && pnpm --filter @one-control/modules build && pnpm --filter @one-control/control-plane dev",
+    "dev:console": "pnpm --filter @one-control/console dev",
+    "build": "pnpm -r build",
+    "typecheck": "pnpm -r typecheck",
+    "test": "pnpm --filter @one-control/modules test && pnpm --filter @one-control/protocol build && pnpm --filter @one-control/control-plane build && tsx --test apps/console/tests/view-model.test.mjs apps/console/tests/device-health.test.mjs apps/console/tests/api-errors.test.mjs scripts/tests/local-poc-config.test.mjs scripts/tests/local-poc-backup.test.mjs scripts/tests/local-poc-backup-process.test.mjs scripts/tests/artifact-storage.test.mjs scripts/tests/native-tooling.test.mjs && pnpm --filter @one-control/artifacts test && pnpm --filter @one-control/control-plane test",
+    "test:native": "node scripts/check-native.mjs",
+    "lint": "biome check .",
+    "format": "biome check --write .",
+    "check": "pnpm typecheck && pnpm lint && pnpm test && pnpm build",
+    "setup:local": "node scripts/setup-local.mjs",
+    "test:console": "node scripts/verify-console.mjs",
+    "test:console:uncertainty": "node scripts/verify-console-uncertainty.mjs",
+    "test:postgres": "node scripts/test-postgres.mjs --profile owned-local",
+    "test:postgres:ci": "node scripts/test-postgres.mjs --profile ci-service",
+    "test:postgres:runner": "node --test scripts/tests/postgres-runner.test.mjs"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.5.15",
+    "@playwright/test": "^1.64.0",
+    "@one-control/protocol": "workspace:*",
+    "@types/node": "^26.6.5",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2"
+  },
+  "license": "AGPL-3.0-only"
+}

@@ -1,0 +1,20 @@
+{$ONE_CONTROL_HOST} {
+  handle /v1/* {
+    reverse_proxy api:4317
+  }
+  handle /health/* {
+    reverse_proxy api:4317
+  }
+  handle {
+    root * /srv
+    try_files {path} /index.html
+    file_server
+  }
+  header {
+    X-Content-Type-Options nosniff
+    X-Frame-Options DENY
+    Referrer-Policy no-referrer
+    Strict-Transport-Security "max-age=31536000"
+    Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self' data:; connect-src 'self' {$OIDC_ORIGIN}; frame-ancestors 'none'; base-uri 'self'"
+  }
+}

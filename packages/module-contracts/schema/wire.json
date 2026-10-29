@@ -1,0 +1,230 @@
+{
+  "version": 1,
+  "limits": {
+    "envelopeBytes": 6291456,
+    "protectedBytes": 4096,
+    "payloadBytes": 4194304
+  },
+  "patterns": {
+    "id": "^[a-z][a-z0-9]*(?:[.-][a-z0-9]+)*$",
+    "version": "^(0|[1-9][0-9]{0,4})\\.(0|[1-9][0-9]{0,4})\\.(0|[1-9][0-9]{0,4})$",
+    "decimal": "^(0|[1-9][0-9]{0,19})$",
+    "digest": "^[a-f0-9]{64}$",
+    "nonce": "^[A-Za-z0-9_-]{43}$"
+  },
+  "types": {
+    "PackageFile": {
+      "path": "string",
+      "sha256": "digest",
+      "size": "size"
+    },
+    "PackageAttestation": {
+      "schemaVersion": "literal:1",
+      "id": "id",
+      "version": "version",
+      "platform": "platform",
+      "publisher": "id",
+      "layout": "enum:passive-v1,native-host-v1",
+      "archiveSha256": "digest",
+      "archiveSize": "size",
+      "files": "array:PackageFile",
+      "issuedAt": "timestamp",
+      "expiresAt": "timestamp"
+    },
+    "Envelope": {
+      "protected": "string",
+      "payload": "string",
+      "signature": "string"
+    },
+    "Protected": {
+      "schemaVersion": "literal:1",
+      "domain": "domain",
+      "alg": "literal:PS256",
+      "rootVersion": "decimal",
+      "keyId": "id"
+    },
+    "Scope": {
+      "kind": "enum:machine,user",
+      "machineId": "identity",
+      "principal?": "identity",
+      "sessionId?": "identity",
+      "sessionIncarnation?": "nonce",
+      "localNonce?": "nonce"
+    },
+    "Policy": {
+      "schemaVersion": "literal:1",
+      "authorityEpoch": "decimal",
+      "revision": "decimal",
+      "deviceId": "identity",
+      "enrollmentId": "identity",
+      "platform": "platform",
+      "scope": "Scope",
+      "catalogDigest": "digest",
+      "enabled": "map:version",
+      "disabled": "array:id",
+      "allowedPermissions": "array:id",
+      "issuedAt": "timestamp",
+      "expiresAt": "timestamp"
+    },
+    "Freshness": {
+      "schemaVersion": "literal:1",
+      "authorityEpoch": "decimal",
+      "deviceId": "identity",
+      "enrollmentId": "identity",
+      "policyDigest": "digest",
+      "nonce": "nonce",
+      "issuedAt": "timestamp",
+      "expiresAt": "timestamp"
+    },
+    "Artifact": {
+      "url": "https",
+      "sha256": "digest",
+      "size": "size"
+    },
+    "Manifest": {
+      "schemaVersion": "literal:1",
+      "id": "id",
+      "version": "version",
+      "kind": "enum:feature,shared",
+      "minimumBootstrap": "version",
+      "permissions": "array:id",
+      "dependencies": "map:version",
+      "artifacts": "platformmap:Artifact"
+    },
+    "Installed": {
+      "id": "id",
+      "version": "version",
+      "sha256": "digest",
+      "size": "size",
+      "active": "boolean",
+      "rollbackPinned?": "boolean",
+      "dependencies": "map:version"
+    },
+    "PlanInput": {
+      "catalog": "array:Manifest",
+      "enabled": "map:version",
+      "disabled?": "array:id",
+      "platform": "platform",
+      "bootstrapVersion": "version",
+      "allowedPermissions": "array:id",
+      "installed?": "array:Installed"
+    },
+    "Planned": {
+      "key": "string",
+      "manifest": "Manifest",
+      "artifact": "Artifact",
+      "requiredBy": "array:string",
+      "downloadRequired": "boolean"
+    },
+    "Plan": {
+      "packages": "array:Planned",
+      "deactivate": "array:string",
+      "removalCandidates": "array:string"
+    },
+    "Checkpoint": {
+      "rootVersion": "decimal",
+      "authorityEpoch": "decimal",
+      "revision": "decimal",
+      "policyDigest": "digest",
+      "bindingDigest": "digest",
+      "seenAt": "timestamp",
+      "nonce": "nonce"
+    },
+    "CatalogPlatform": {
+      "publisher": "id",
+      "layout": "enum:passive-v1,native-host-v1",
+      "hostAbi": "enum:none,one-control-host-v1",
+      "scope": "enum:machine",
+      "attestationSha256": "digest"
+    },
+    "CatalogEntry": {
+      "manifest": "Manifest",
+      "platforms": "platformmap:CatalogPlatform"
+    },
+    "ModuleCatalog": {
+      "schemaVersion": "literal:2",
+      "authorityEpoch": "decimal",
+      "revision": "decimal",
+      "issuedAt": "timestamp",
+      "expiresAt": "timestamp",
+      "entries": "array:CatalogEntry"
+    },
+    "CatalogFloor": {
+      "rootVersion": "decimal",
+      "authorityEpoch": "decimal",
+      "revision": "decimal",
+      "digest": "digest"
+    },
+    "PublishedPackage": {
+      "identity": "digest",
+      "entry": "CatalogEntry",
+      "platform": "platform",
+      "attestation": "string",
+      "verifiedAt": "timestamp",
+      "state": "enum:intent,published"
+    },
+    "Generation": {
+      "identity": "digest",
+      "packages": "array:digest",
+      "roots": "map:version"
+    },
+    "HostAttempt": {
+      "instance": "digest",
+      "generation": "digest",
+      "package": "digest",
+      "state": "enum:intent,stopped,unknown"
+    },
+    "LifecycleState": {
+      "schemaVersion": "literal:1",
+      "sequence": "decimal",
+      "checkpoint": "Checkpoint",
+      "catalogFloor": "CatalogFloor",
+      "policyEnvelope": "string",
+      "catalogEnvelope": "string",
+      "packages": "array:PublishedPackage",
+      "generations": "array:Generation",
+      "attempts": "array:HostAttempt",
+      "candidate": "string",
+      "active": "string",
+      "healthy": "string",
+      "trash": "array:digest",
+      "freshnessEnvelope": "string"
+    }
+  },
+  "domains": [
+    "root.v1",
+    "module-catalog.v2",
+    "device-policy.v1",
+    "policy-freshness.v1",
+    "bootstrap-release.v1",
+    "publisher-attestation.v1"
+  ],
+  "platforms": ["win-x64", "win-arm64", "osx-x64", "osx-arm64", "linux-x64", "linux-arm64"],
+  "errors": [
+    "invalid_wire",
+    "invalid_signature",
+    "untrusted_key",
+    "wrong_role",
+    "wrong_root",
+    "wrong_binding",
+    "expired",
+    "clock_rollback",
+    "stale_epoch",
+    "stale_revision",
+    "equivocation",
+    "replayed_challenge",
+    "invalid_checkpoint",
+    "checkpoint_conflict",
+    "duplicate_manifest",
+    "duplicate_installed_module",
+    "installed_dependency_cycle",
+    "missing_installed_dependency",
+    "dependency_cycle",
+    "missing_manifest",
+    "module_disabled",
+    "bootstrap_upgrade_required",
+    "permission_not_granted",
+    "unsupported_platform",
+    "feature_root_required"
+  ]
+}

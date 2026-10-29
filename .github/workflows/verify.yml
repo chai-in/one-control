@@ -1,0 +1,116 @@
+name: Verify
+on:
+  push:
+    paths-ignore: ["docs/**", "**/*.md", "legacy sentry/**"]
+  pull_request:
+    paths-ignore: ["docs/**", "**/*.md", "legacy sentry/**"]
+permissions:
+  contents: read
+concurrency:
+  group: verify-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  control-plane:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:18.6-bookworm
+        env:
+          POSTGRES_DB: postgres
+          POSTGRES_USER: oc_setup_00000000000000000000000000000000
+          POSTGRES_PASSWORD: one_control_test_only
+          POSTGRES_INITDB_ARGS: --data-checksums --auth-host=scram-sha-256 --auth-local=trust
+        ports: ["127.0.0.1:5432:5432"]
+        options: --health-cmd "pg_isready -U oc_setup_00000000000000000000000000000000 -d postgres" --health-interval 5s --health-timeout 5s --health-retries 10
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+      - uses: pnpm/action-setup@f40ffcd9367d9f12939873eb1018b921a783ffaa
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444
+        with: { node-version: "24", cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm check
+      - name: Verify real PostgreSQL concurrency and transactions
+        run: pnpm test:postgres:runner && pnpm test:postgres:ci
+        env:
+          ONE_CONTROL_PG_SERVICE_ID: ${{ job.services.postgres.id }}
+          ONE_CONTROL_PG_SERVICE_NETWORK: ${{ job.services.postgres.network }}
+          ONE_CONTROL_PG_SERVICE_PORT: ${{ job.services.postgres.ports[5432] }}
+          ONE_CONTROL_PG_PASSWORD: one_control_test_only
+      - name: Retain sanitized PostgreSQL manifest
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: postgres-custody
+          path: .local/orchestrate/full-build/evidence/database-fixture-ci-implementation/upload/runner-manifest.json
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 7
+      - name: Verify creator-owned PostgreSQL generation rejection
+        run: node scripts/test-postgres-service-custody.mjs
+        env:
+          ONE_CONTROL_PG_SERVICE_ID: ${{ job.services.postgres.id }}
+          ONE_CONTROL_PG_SERVICE_NETWORK: ${{ job.services.postgres.network }}
+          ONE_CONTROL_PG_SERVICE_PORT: ${{ job.services.postgres.ports[5432] }}
+          ONE_CONTROL_PG_PASSWORD: one_control_test_only
+      - name: Retain sanitized owned-container manifest
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: postgres-generation-custody
+          path: .local/orchestrate/full-build/evidence/database-startup-identity-implementation/service-custody/upload/service-custody-manifest.json
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 7
+      - run: pnpm audit --prod --audit-level high
+      - name: Install console acceptance browser
+        run: pnpm exec playwright install --with-deps chromium
+      - name: Verify isolated console uncertainty
+        run: pnpm test:console:uncertainty
+      - name: Verify independent console and sign-out boundary
+        shell: bash
+        run: |
+          pnpm setup:local
+          pnpm dev > /tmp/one-control-api.log 2>&1 &
+          api_pid=$!
+          pnpm dev:console > /tmp/one-control-console.log 2>&1 &
+          console_pid=$!
+          trap 'kill "$api_pid" "$console_pid" 2>/dev/null || true' EXIT
+          for attempt in {1..60}; do
+            if curl --fail --silent http://127.0.0.1:4317/health/ready > /dev/null && curl --fail --silent http://127.0.0.1:4318 > /dev/null; then break; fi
+            sleep 1
+          done
+          curl --fail --silent http://127.0.0.1:4317/health/ready > /dev/null
+          pnpm test:console
+      - name: Retain console acceptance screenshots
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: console-acceptance
+          path: .local/screenshots
+          if-no-files-found: ignore
+          retention-days: 7
+  windows-agent:
+    runs-on: windows-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+      - uses: pnpm/action-setup@f40ffcd9367d9f12939873eb1018b921a783ffaa
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444
+        with: { node-version: "24", package-manager-cache: false }
+      - uses: actions/setup-dotnet@26b0ec14cb23fa6904739307f278c14f94c95bf1
+        with: { global-json-file: global.json }
+      - run: dotnet restore OneControl.slnx --locked-mode
+      - run: dotnet build OneControl.slnx -c Release --no-restore
+      - run: dotnet test OneControl.slnx -c Release --no-build
+      - run: ./scripts/check-powershell.ps1
+      - name: Verify protected Windows artifact administration
+        run: node --test scripts/tests/artifact-storage.test.mjs
+      - name: Install locked control-plane test dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Build isolated POC backup acceptance fixture
+        run: pnpm --filter @one-control/protocol build && pnpm --filter @one-control/control-plane build
+      - name: Verify Windows API snapshot and IPC lifetime
+        run: node --test scripts/tests/local-poc-backup-process.test.mjs
+      - name: Verify locked self-contained agent publishing
+        run: ./scripts/publish-agent.ps1 -OutputDirectory (Join-Path $env:RUNNER_TEMP 'unsigned-agent-release') -Dotnet dotnet

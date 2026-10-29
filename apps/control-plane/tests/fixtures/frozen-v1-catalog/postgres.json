@@ -1,0 +1,11 @@
+{
+  "engine": "postgres-18.6",
+  "version": "180006",
+  "sourceBlob": "0eea88dd46ab5ca4542d9c037a9c511fef779108",
+  "sourceSha256": "090865060fb7a171cd4cccaddf89ac7366026e1efe8eea3d87372313204b2de6",
+  "sqlSha256": "f250dca873ac00b206a74af1401351c75a137fe3ffe5f0750e7ba3b517111bc1",
+  "catalogSha256": "7648810dad3ecf14fc5949072c986e4b1a38191d5e06b3b87a6523e71d01c8b0",
+  "representation": "identical to separately source-created pinned PGlite catalog",
+  "ownedLocalRun": "328a4301eaab97c627b67430feb9427d",
+  "independentCreation": "fresh fixture-owned namespace, twelve independently frozen units, authenticated migrator, original source reconstruction assertion"
+}

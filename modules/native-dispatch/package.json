@@ -1,0 +1,16 @@
+{
+  "name": "@one-control/feature-native-dispatch",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "license": "AGPL-3.0-only",
+  "dependencies": {
+    "@one-control/protocol": "workspace:*",
+    "react": "^19.3.0",
+    "lucide-react": "^1.56.0",
+    "fastify": "^5.12.7",
+    "zod": "^4.6.7",
+    "@one-control/module-contracts": "workspace:*",
+    "@types/react": "^19.3.0"
+  }
+}

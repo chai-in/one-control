@@ -1,0 +1,12 @@
+FROM node:24-bookworm-slim AS build
+WORKDIR /app
+RUN corepack enable && corepack prepare pnpm@11.25.0 --activate
+COPY . .
+ARG VITE_OIDC_ISSUER
+ARG VITE_OIDC_CLIENT_ID
+ARG VITE_OIDC_AUDIENCE
+ENV VITE_OIDC_ISSUER=$VITE_OIDC_ISSUER VITE_OIDC_CLIENT_ID=$VITE_OIDC_CLIENT_ID VITE_OIDC_AUDIENCE=$VITE_OIDC_AUDIENCE
+RUN pnpm install --frozen-lockfile && pnpm --filter @one-control/console build
+FROM caddy:2-alpine
+COPY --from=build /app/apps/console/dist /srv
+COPY deploy/Caddyfile /etc/caddy/Caddyfile
