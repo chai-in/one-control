@@ -1,6 +1,6 @@
 # Optional native inventory host
 
-`native/cmd/oc-inventory` is a separate executable for the optional `inventory` module. It uses the existing fixed Windows inventory collector. The bootstrap and control-plane transport do not import that collector. Its fixed operation is `inventory.scan`, requiring `inventory.read` in the active policy and package manifest. It does not implement application inventory, update execution, scripts or shell access.
+`modules/inventory/native/cmd/oc-inventory` is a separate executable for the optional `inventory` module. It uses the existing fixed Windows inventory collector. The bootstrap and control-plane transport do not import that collector. Its fixed operation is `inventory.scan`, requiring `inventory.read` in the active policy and package manifest. It does not implement application inventory, update execution, scripts or shell access.
 
 ## Host lifecycle and IPC
 
@@ -19,11 +19,39 @@ The host accepts only an empty input for `inventory.scan`. A handler failure, in
 `scripts/package-native-feature.mjs` builds a single selected feature for `win-x64` or `win-arm64`, without CGO, into a new output directory. It produces the fixed `bin/host.exe` ZIP layout, exact file/archive hashes, a planner manifest and unsigned publisher-attestation request. It does not load keys, sign, upload, publish, install or execute the host. Supply new release configuration explicitly:
 
 ```powershell
-node scripts/package-native-feature.mjs --feature inventory --version 0.1.0 --platform win-x64 --output .local/inventory-candidate --artifact-url https://artifacts.example.invalid/inventory-0.1.0-win-x64.zip --publisher one-control --issued-at 1793318400 --expires-at 1793404800
+node scripts/package-native-feature.mjs --feature inventory --version 0.1.0 --platform win-x64 --output .local/inventory-candidate --artifact-origin https://artifacts.example.invalid --publisher one-control --issued-at 1793318400 --expires-at 1793404800
 ```
 
 The example URL is deliberately non-deployable; timestamps and publisher are examples. A real publication needs a configured artifact origin, current explicit validity, approved publisher signature and catalog admission. An unsigned candidate is never accepted by the delivery owner.
 
 ## Current evidence
 
-The host and transport/lifecycle libraries compile on the local Windows toolchain, and a local unsigned x64 ZIP was built. Behavioral IPC, lifecycle integration, lost-receipt, permission change and actual endpoint acceptance remain pending under the current instruction to build functionality before tests. Protected installation, Windows service wiring, issuer/root rotation and the rest of the endpoint providers are not supplied by this host.
+The host and transport/lifecycle libraries compile on the local Windows toolchain.
+Native conformance, IPC, lifecycle, package and selected-download authorization tests
+pass locally. Protected installation and Windows service wiring are implemented;
+elevated CI and actual endpoint acceptance remain distinct release requirements.
+The bootstrap schedules collection only while inventory is selected and permitted.
+Issuer/root rotation and the remaining endpoint providers still require completion.
+
+## Signing and server-computer publication
+
+`--artifact-origin` derives the immutable `/v1/artifacts/<sha256>/package.zip` URL
+after building. `scripts/sign-native-feature.mjs --build <directory> --custody
+<absolute-private-publisher.json>` signs the exact generated request and writes
+`signed-module.json`. The private custody record names `credentialRoot`,
+`privateKeyFile`, `publisher`, `keyId` and `rootVersion`; it belongs outside the
+repository. The key must match a publisher key in the server authority.
+
+`scripts/publish-native-artifact.mjs --build <directory> --store <absolute-store>`
+writes the exact checked bytes once. The publication operator provisions the store
+ACL; the serving identity needs read access only. Existing objects are never
+overwritten. Admit `signed-module.json`'s entry and attestation through the scoped
+catalog API, then select the desired version through management settings.
+
+For an on-premises artifact origin, build `@one-control/artifacts` and run
+`node apps/artifacts/server/local.mjs <absolute-private-config>` using the template
+in `deploy/artifacts.env.example`. TLS ingress preserves the configured Host and
+forwards to its loopback port. The control plane and artifact service share a
+separately provisioned 32-byte read key; the publisher key stays offline. Download
+capabilities expire after at most 60 seconds. A deselected or revoked device cannot
+obtain a new capability; already issued reads retain that bounded lifetime.

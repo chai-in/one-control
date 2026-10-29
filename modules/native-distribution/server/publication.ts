@@ -13,6 +13,7 @@ import {
   recordNativeObservation,
 } from "../../native-observations/server/observations.js";
 import { recoveryKeyInput, saveRecoveryKey } from "../../recovery-escrow/server/escrow.js";
+import { artifactReadKey, artifactTicket } from "./artifacts.js";
 import { admittedCatalog } from "./catalog.js";
 import { type NativeAuthority, nativeAuthority, nativeDigest, nativeRoles } from "./signing.js";
 
@@ -268,6 +269,38 @@ export function nativePublicationControl(db: Database, config: Config, boundary:
     return { enrollment, selection, catalog, scope: scope! };
   }
   return {
+    async nativeArtifactTicket(credential: string, raw: unknown) {
+      const input = z
+        .strictObject({ id: moduleId, version: moduleVersion, sha256: z.string().regex(/^[a-f0-9]{64}$/) })
+        .parse(raw);
+      const authority = await nativeAuthority(config),
+        secret = await artifactReadKey(config);
+      return db.transaction(async (tx) => {
+        const { enrollment, selection, catalog } = await nativeContext(tx, authority, hash(credential));
+        const plan = resolveModulePlan({
+          catalog: (catalog.projection as ModuleCatalog).entries.map((entry) => entry.manifest),
+          enabled: selection.enabled,
+          disabled: selection.disabled,
+          platform: enrollment.platform as ModulePlatform,
+          bootstrapVersion: selection.bootstrap_version,
+          allowedPermissions: selection.allowed_permissions,
+        });
+        const selected = plan.packages.find(
+          (item) =>
+            item.manifest.id === input.id &&
+            item.manifest.version === input.version &&
+            item.artifact.sha256 === input.sha256,
+        );
+        if (!selected) throw new ApiError(403, "native_artifact_not_selected");
+        const time = await now(tx);
+        return artifactTicket(
+          selected.artifact,
+          secret,
+          Math.min(time + 60, Math.floor(new Date(catalog.expires_at).getTime() / 1000)),
+          time * 1000,
+        );
+      });
+    },
     ...nativeJobControl(db, config, {
       credential: boundary.credential,
       command: boundary.command,

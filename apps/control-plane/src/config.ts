@@ -19,6 +19,7 @@ const configSchema = z.object({
   FALCON_MANAGEMENT_SCOPE: z.uuid().optional(),
   NATIVE_AUTHORITY_CONFIG: z.string().optional(),
   CREDENTIAL_ROOT: z.string().optional(),
+  ARTIFACT_READ_KEY_FILE: z.string().optional(),
   RECOVERY_ESCROW_KEYRING_FILE: z.string().optional(),
   OIDC_STEP_UP_ACRS: z.string().optional(),
   FALCON_WEBHOOK_SECRET: z.string().min(32).optional(),

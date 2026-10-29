@@ -1,11 +1,12 @@
 import { createHash, randomBytes, randomUUID } from "node:crypto";
-import type { FastifyInstance } from "fastify";
+import type { FastifyInstance, InjectOptions } from "fastify";
 import { afterAll, beforeAll, describe, expect, test } from "vitest";
 import { buildApp } from "../src/app.js";
 import { parseConfig } from "../src/config.js";
 import { reconcileExpiredJobs } from "../src/coordinator.js";
 import type { Database } from "../src/database.js";
 import { openTestDatabase } from "./database-fixture.js";
+import { nativeFixture } from "./native-fixture.js";
 
 const operator = "operator-".repeat(8);
 const approver = "approver-".repeat(8);
@@ -13,6 +14,7 @@ let db: Database;
 let app: FastifyInstance;
 let deviceId: string;
 let credential: string;
+let native: Awaited<ReturnType<typeof nativeFixture>>;
 const headers = { authorization: `Bearer ${operator}` };
 function window() {
   return {
@@ -39,6 +41,7 @@ async function enroll() {
 }
 beforeAll(async () => {
   db = await openTestDatabase();
+  native = await nativeFixture(operator);
   app = await buildApp(
     db,
     parseConfig({
@@ -46,11 +49,13 @@ beforeAll(async () => {
       DEPLOYMENT_STAGE: "production",
       DEV_OPERATOR_TOKEN: operator,
       DEV_APPROVER_TOKEN: approver,
+      ...native.config,
     }),
   );
   app.get("/v1/agent/rate-test", { config: { rateLimit: { max: 1, timeWindow: "1 minute" } } }, async () => ({
     ok: true,
   }));
+  await native.prepare(app);
   const response = await enroll();
   expect(response.statusCode).toBe(201);
   ({ deviceId, credential } = response.json());
@@ -58,6 +63,7 @@ beforeAll(async () => {
 afterAll(async () => {
   await app?.close();
   await db?.close();
+  await native?.close();
 });
 describe("trust and enrollment", () => {
   test("EMA inventory requires an administrator and remains optional", async () => {
@@ -66,7 +72,7 @@ describe("trust and enrollment", () => {
     expect((await app.inject({ url, headers: { authorization: `Bearer ${credential}` } })).statusCode).toBe(
       401,
     );
-    const response = await app.inject({ url, headers });
+    const response = await app.inject({ url: `${url}?scopeId=${native.scopeId}`, headers });
     expect(response.statusCode).toBe(200);
     expect(response.json()).toEqual({ configured: false, endpoints: [] });
   });
@@ -185,9 +191,17 @@ describe("trust and enrollment", () => {
     ).toBe(401);
   });
 });
-describe("durable dispatch", () => {
+describe("native scoped dispatch", () => {
+  beforeAll(async () => {
+    ({ deviceId, credential } = await native.enroll(app));
+  }, 30_000);
+  const nativeInject = (options: InjectOptions) => native.inject(app, options);
+  async function enroll() {
+    const enrolled = await native.enroll(app);
+    return { statusCode: 201, json: () => enrolled };
+  }
   async function reviewDigest(id: string) {
-    const response = await app.inject({ url: `/v1/batches/${id}`, headers });
+    const response = await nativeInject({ url: `/v1/batches/${id}`, headers });
     expect(response.statusCode).toBe(200);
     return response.json().reviewDigest;
   }
@@ -198,8 +212,8 @@ describe("durable dispatch", () => {
     expect(created.statusCode).toBe(201);
     const id = created.json().batchId;
     const reviewUrl = `/v1/batches/${id}`;
-    expect((await app.inject({ url: reviewUrl })).statusCode).toBe(401);
-    const review = (await app.inject({ url: reviewUrl, headers })).json();
+    expect((await nativeInject({ url: reviewUrl })).statusCode).toBe(401);
+    const review = (await nativeInject({ url: reviewUrl, headers })).json();
     expect(review.command).toEqual(command);
     expect(review.createdBy).toBeTruthy();
     expect(review.targets.map((target: { deviceId: string }) => target.deviceId).sort()).toEqual(
@@ -210,20 +224,20 @@ describe("durable dispatch", () => {
       url: `${reviewUrl}/approve`,
       headers: { authorization: `Bearer ${approver}` },
     };
-    expect((await app.inject({ ...approval, payload: {} })).statusCode).toBe(400);
-    expect((await app.inject({ ...approval, payload: { reviewDigest: "0".repeat(64) } })).statusCode).toBe(
+    expect((await nativeInject({ ...approval, payload: {} })).statusCode).toBe(400);
+    expect((await nativeInject({ ...approval, payload: { reviewDigest: "0".repeat(64) } })).statusCode).toBe(
       409,
     );
     expect((await db.query("SELECT approved_by FROM batches WHERE id=$1", [id]))[0]?.approved_by).toBeNull();
     expect(
-      (await app.inject({ ...approval, payload: { reviewDigest: review.reviewDigest } })).statusCode,
+      (await nativeInject({ ...approval, payload: { reviewDigest: review.reviewDigest } })).statusCode,
     ).toBe(200);
-    const feed = (await app.inject({ url: "/v1/jobs", headers })).json().jobs;
+    const feed = (await nativeInject({ url: "/v1/jobs", headers })).json().jobs;
     expect(feed.find((job: { batch_id: string }) => job.batch_id === id).command).toEqual(command);
     expect(
-      (await app.inject({ ...approval, payload: { reviewDigest: review.reviewDigest } })).statusCode,
+      (await nativeInject({ ...approval, payload: { reviewDigest: review.reviewDigest } })).statusCode,
     ).toBe(409);
-    await app.inject({ method: "POST", url: `${reviewUrl}/cancel`, headers });
+    await nativeInject({ method: "POST", url: `${reviewUrl}/cancel`, headers });
   });
   test("offline computers have expired work reconciled once by competing coordinators", async () => {
     const offline = (await enroll()).json();
@@ -233,7 +247,7 @@ describe("durable dispatch", () => {
     const id = operation.json().batchId;
     expect(
       (
-        await app.inject({
+        await nativeInject({
           method: "POST",
           url: `/v1/batches/${id}/approve`,
           headers: { authorization: `Bearer ${approver}` },
@@ -243,7 +257,7 @@ describe("durable dispatch", () => {
     ).toBe(200);
     const auth = { authorization: `Bearer ${offline.credential}` };
     const lease = (
-      await app.inject({ method: "POST", url: "/v1/agent/claim", headers: auth, payload: {} })
+      await nativeInject({ method: "POST", url: "/v1/agent/native-claim", headers: auth, payload: {} })
     ).json().lease;
     const pending = await batch({ kind: "inventory.scan" }, [offline.deviceId]);
     await db.query("UPDATE jobs SET lease_expires_at=now()-interval '1 minute' WHERE id=$1", [lease.id]);
@@ -264,20 +278,22 @@ describe("durable dispatch", () => {
       ]),
     ).toHaveLength(1);
     expect(
-      (await app.inject({ method: "POST", url: "/v1/agent/claim", headers: auth, payload: {} })).json().lease,
+      (
+        await nativeInject({ method: "POST", url: "/v1/agent/native-claim", headers: auth, payload: {} })
+      ).json().lease,
     ).toBeNull();
   });
   test("idempotency replay returns the same jobs; changed input conflicts", async () => {
     const payload = { targets: [deviceId], ring: "canary", command: { kind: "inventory.scan" }, ...window() };
     const idempotentHeaders = { ...headers, "idempotency-key": randomUUID() };
-    const first = await app.inject({
+    const first = await nativeInject({
       method: "POST",
       url: "/v1/batches",
       headers: idempotentHeaders,
       payload,
     });
     expect(first.statusCode).toBe(201);
-    const second = await app.inject({
+    const second = await nativeInject({
       method: "POST",
       url: "/v1/batches",
       headers: idempotentHeaders,
@@ -286,7 +302,7 @@ describe("durable dispatch", () => {
     expect(second.json()).toEqual(first.json());
     expect(
       (
-        await app.inject({
+        await nativeInject({
           method: "POST",
           url: "/v1/batches",
           headers: idempotentHeaders,
@@ -298,17 +314,19 @@ describe("durable dispatch", () => {
   test("concurrent pollers receive at most one lease per computer", async () => {
     const auth = { authorization: `Bearer ${credential}` };
     const responses = await Promise.all(
-      [1, 2].map(() => app.inject({ method: "POST", url: "/v1/agent/claim", headers: auth, payload: {} })),
+      [1, 2].map(() =>
+        nativeInject({ method: "POST", url: "/v1/agent/native-claim", headers: auth, payload: {} }),
+      ),
     );
     expect(responses.map((r) => r.statusCode)).toEqual([200, 200]);
     const leases = responses.map((r) => r.json().lease).filter(Boolean);
     expect(leases).toHaveLength(1);
     const lease = leases[0];
-    const stale = await app.inject({
+    const stale = await nativeInject({
       method: "POST",
-      url: `/v1/agent/jobs/${lease.id}/report`,
+      url: `/v1/agent/native-jobs/${lease.id}/report`,
       headers: auth,
-      payload: { leaseToken: "invalid-".repeat(8), state: "succeeded", result: { ok: true } },
+      payload: { leaseToken: "A".repeat(43), state: "succeeded", result: { ok: true } },
     });
     expect(stale.statusCode).toBe(409);
     const receipt = {
@@ -316,18 +334,18 @@ describe("durable dispatch", () => {
       state: "succeeded",
       result: { hostname: "test-workstation", rebootPending: false },
     };
-    const result = await app.inject({
+    const result = await nativeInject({
       method: "POST",
-      url: `/v1/agent/jobs/${lease.id}/report`,
+      url: `/v1/agent/native-jobs/${lease.id}/report`,
       headers: auth,
       payload: receipt,
     });
     expect(result.statusCode).toBe(200);
     expect(
       (
-        await app.inject({
+        await nativeInject({
           method: "POST",
-          url: `/v1/agent/jobs/${lease.id}/report`,
+          url: `/v1/agent/native-jobs/${lease.id}/report`,
           headers: auth,
           payload: receipt,
         })
@@ -339,13 +357,13 @@ describe("durable dispatch", () => {
     expect(response.statusCode).toBe(201);
     const { batchId, jobIds } = response.json();
     expect(
-      (await app.inject({ method: "POST", url: `/v1/batches/${batchId}/approve`, headers })).statusCode,
+      (await nativeInject({ method: "POST", url: `/v1/batches/${batchId}/approve`, headers })).statusCode,
     ).toBe(403);
     expect(
       (
-        await app.inject({
+        await nativeInject({
           method: "POST",
-          url: "/v1/agent/claim",
+          url: "/v1/agent/native-claim",
           headers: { authorization: `Bearer ${credential}` },
           payload: {},
         })
@@ -353,7 +371,7 @@ describe("durable dispatch", () => {
     ).toBeNull();
     expect(
       (
-        await app.inject({
+        await nativeInject({
           method: "POST",
           url: `/v1/batches/${batchId}/approve`,
           headers: { authorization: `Bearer ${approver}` },
@@ -361,9 +379,9 @@ describe("durable dispatch", () => {
         })
       ).statusCode,
     ).toBe(200);
-    const leaseResponse = await app.inject({
+    const leaseResponse = await nativeInject({
       method: "POST",
-      url: "/v1/agent/claim",
+      url: "/v1/agent/native-claim",
       headers: { authorization: `Bearer ${credential}` },
       payload: {},
     });
@@ -371,9 +389,9 @@ describe("durable dispatch", () => {
     await db.query("UPDATE jobs SET lease_expires_at=now()-interval '1 minute' WHERE id=$1", [jobIds[0]]);
     expect(
       (
-        await app.inject({
+        await nativeInject({
           method: "POST",
-          url: "/v1/agent/claim",
+          url: "/v1/agent/native-claim",
           headers: { authorization: `Bearer ${credential}` },
           payload: {},
         })
@@ -386,9 +404,9 @@ describe("durable dispatch", () => {
     expect(another.statusCode).toBe(201);
     expect(
       (
-        await app.inject({
+        await nativeInject({
           method: "POST",
-          url: "/v1/agent/claim",
+          url: "/v1/agent/native-claim",
           headers: { authorization: `Bearer ${credential}` },
           payload: {},
         })
@@ -396,7 +414,7 @@ describe("durable dispatch", () => {
     ).toBeNull();
     expect(
       (
-        await app.inject({
+        await nativeInject({
           method: "POST",
           url: `/v1/jobs/${jobIds[0]}/reconcile`,
           headers,
@@ -405,47 +423,55 @@ describe("durable dispatch", () => {
       ).statusCode,
     ).toBe(200);
     const resumed = (
-      await app.inject({
+      await nativeInject({
         method: "POST",
-        url: "/v1/agent/claim",
+        url: "/v1/agent/native-claim",
         headers: { authorization: `Bearer ${credential}` },
         payload: {},
       })
     ).json().lease;
     expect(resumed.id).toBe(another.json().jobIds[0]);
-    await app.inject({
+    await nativeInject({
       method: "POST",
-      url: `/v1/agent/jobs/${resumed.id}/report`,
+      url: `/v1/agent/native-jobs/${resumed.id}/report`,
       headers: { authorization: `Bearer ${credential}` },
       payload: { leaseToken: resumed.leaseToken, state: "succeeded", result: {} },
     });
   });
-  test("expired inventory leases can retry and old fencing tokens lose authority", async () => {
+  test("expired native reads require new admission and old fencing tokens lose authority", async () => {
     const response = await batch({ kind: "inventory.scan" });
     expect(response.statusCode).toBe(201);
     const auth = { authorization: `Bearer ${credential}` };
     const original = (
-      await app.inject({ method: "POST", url: "/v1/agent/claim", headers: auth, payload: {} })
+      await nativeInject({ method: "POST", url: "/v1/agent/native-claim", headers: auth, payload: {} })
     ).json().lease;
     await db.query("UPDATE jobs SET lease_expires_at=now()-interval '1 minute' WHERE id=$1", [original.id]);
+    expect(
+      (
+        await nativeInject({ method: "POST", url: "/v1/agent/native-claim", headers: auth, payload: {} })
+      ).json().lease,
+    ).toBeNull();
+    expect((await db.query("SELECT state FROM jobs WHERE id=$1", [original.id]))[0]?.state).toBe("failed");
+    const replacement = await batch({ kind: "inventory.scan" });
+    expect(replacement.statusCode).toBe(201);
     const retry = (
-      await app.inject({ method: "POST", url: "/v1/agent/claim", headers: auth, payload: {} })
+      await nativeInject({ method: "POST", url: "/v1/agent/native-claim", headers: auth, payload: {} })
     ).json().lease;
-    expect(retry.id).toBe(original.id);
+    expect(retry.id).toBe(replacement.json().jobIds[0]);
     expect(retry.leaseToken).not.toBe(original.leaseToken);
     expect(
       (
-        await app.inject({
+        await nativeInject({
           method: "POST",
-          url: `/v1/agent/jobs/${original.id}/renew`,
+          url: `/v1/agent/native-jobs/${original.id}/renew`,
           headers: auth,
           payload: { leaseToken: original.leaseToken },
         })
       ).statusCode,
     ).toBe(409);
-    await app.inject({
+    await nativeInject({
       method: "POST",
-      url: `/v1/agent/jobs/${retry.id}/report`,
+      url: `/v1/agent/native-jobs/${retry.id}/report`,
       headers: auth,
       payload: { leaseToken: retry.leaseToken, state: "succeeded", result: {} },
     });
@@ -453,11 +479,15 @@ describe("durable dispatch", () => {
   test("a later ring cannot be approved without a successful previous ring", async () => {
     const enrolled = await enroll();
     const pilot = enrolled.json();
-    await app.inject({
+    await nativeInject({
       method: "PATCH",
-      url: `/v1/devices/${pilot.deviceId}/ring`,
+      url: `/v1/scopes/${native.scopeId}/native-enrollments/${pilot.enrollmentId}/ring`,
       headers,
-      payload: { ring: "pilot" },
+      payload: {
+        ring: "pilot",
+        expectedVersion: (await app.inject({ url: `/v1/scopes/${native.scopeId}/modules`, headers })).json()
+          .version,
+      },
     });
     const response = await batch(
       { kind: "winget.upgrade", packageId: "Microsoft.PowerToys", version: "0.1.0" },
@@ -467,7 +497,7 @@ describe("durable dispatch", () => {
     expect(response.statusCode).toBe(201);
     expect(
       (
-        await app.inject({
+        await nativeInject({
           method: "POST",
           url: `/v1/batches/${response.json().batchId}/approve`,
           headers: { authorization: `Bearer ${approver}` },
@@ -481,19 +511,23 @@ describe("durable dispatch", () => {
     const pending = await batch({ kind: "inventory.scan" }, [computer.deviceId]);
     const request = {
       method: "PATCH" as const,
-      url: `/v1/devices/${computer.deviceId}/ring`,
+      url: `/v1/scopes/${native.scopeId}/native-enrollments/${computer.enrollmentId}/ring`,
       headers,
-      payload: { ring: "pilot" },
+      payload: {
+        ring: "pilot",
+        expectedVersion: (await app.inject({ url: `/v1/scopes/${native.scopeId}/modules`, headers })).json()
+          .version,
+      },
     };
-    expect((await app.inject(request)).statusCode).toBe(409);
-    await app.inject({ method: "POST", url: `/v1/batches/${pending.json().batchId}/cancel`, headers });
-    expect((await app.inject(request)).statusCode).toBe(200);
+    expect((await nativeInject(request)).statusCode).toBe(409);
+    await nativeInject({ method: "POST", url: `/v1/batches/${pending.json().batchId}/cancel`, headers });
+    expect((await nativeInject(request)).statusCode).toBe(200);
   });
   test("latest audit view includes new events beyond the first page", async () => {
     await db.query(
       "INSERT INTO audit_events(actor,action,subject,detail) SELECT 'test','pagination.fixture',generate_series::text,'{}'::jsonb FROM generate_series(1,510)",
     );
-    const latest = (await app.inject({ url: "/v1/audit?direction=latest", headers })).json().events;
+    const latest = (await nativeInject({ url: "/v1/audit?direction=latest", headers })).json().events;
     expect(latest).toHaveLength(500);
     expect(
       latest.some(
@@ -502,7 +536,7 @@ describe("durable dispatch", () => {
       ),
     ).toBe(true);
     expect(Number(latest[0].sequence)).toBeGreaterThan(Number(latest[1].sequence));
-    const forward = (await app.inject({ url: `/v1/audit?after=${latest[1].sequence}`, headers })).json()
+    const forward = (await nativeInject({ url: `/v1/audit?after=${latest[1].sequence}`, headers })).json()
       .events;
     expect(
       forward.some((event: { sequence: string | number }) => event.sequence === latest[0].sequence),
@@ -529,14 +563,20 @@ describe("durable dispatch", () => {
     const victim = enrolled.json();
     await batch({ kind: "inventory.scan" }, [victim.deviceId]);
     expect(
-      (await app.inject({ method: "POST", url: `/v1/devices/${victim.deviceId}/revoke`, headers }))
-        .statusCode,
+      (
+        await nativeInject({
+          method: "POST",
+          url: `/v1/scopes/${native.scopeId}/native-enrollments/${victim.enrollmentId}/revoke`,
+          headers,
+          payload: {},
+        })
+      ).statusCode,
     ).toBe(200);
     expect(
       (
-        await app.inject({
+        await nativeInject({
           method: "POST",
-          url: "/v1/agent/claim",
+          url: "/v1/agent/native-claim",
           headers: { authorization: `Bearer ${victim.credential}` },
           payload: {},
         })
@@ -549,7 +589,7 @@ describe("durable dispatch", () => {
     ).toBe(true);
   });
   test("audit records changes without reusable credentials", async () => {
-    const response = await app.inject({ url: "/v1/audit", headers });
+    const response = await nativeInject({ url: "/v1/audit", headers });
     expect(response.statusCode).toBe(200);
     expect(response.json().events.length).toBeGreaterThan(0);
     expect(response.body).not.toContain(credential);

@@ -20,7 +20,7 @@ imported Windows provider assembly.
 The imported Windows projects compile the relocated compatibility providers with
 explicit source references. Those projects preserve the migration foundation;
 their monolithic installer is not the thin-client release. Inventory has a separate
-native host. Other providers still need extraction and acceptance as downloadable
+native host, as does Windows Update. Other providers still need extraction and acceptance as downloadable
 hosts before they can be offered as endpoint releases.
 
 Shared device identity, protected storage, transport, signatures, planning and

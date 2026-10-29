@@ -111,7 +111,7 @@ export function applications(inventory: Record<string, unknown> | null) {
 export type AvailableUpdate = { id: string; revision: number; title: string };
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 export function availableUpdates(result: Record<string, unknown> | null): AvailableUpdate[] {
-  if (!Array.isArray(result?.updates)) return [];
+  if (!Array.isArray(result?.updates) || result.partial === true) return [];
   const found = new Map<string, AvailableUpdate>();
   for (const value of result.updates) {
     const update = record(value);

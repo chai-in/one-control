@@ -15,6 +15,7 @@ const { values } = parseArgs({
     platform: { type: "string" },
     output: { type: "string" },
     "artifact-url": { type: "string" },
+    "artifact-origin": { type: "string" },
     publisher: { type: "string" },
     "issued-at": { type: "string" },
     "expires-at": { type: "string" },
@@ -27,9 +28,14 @@ const features = {
     command: "oc-inventory",
     permissions: ["inventory.read"],
   },
+  "windows-updates": {
+    directory: "modules/windows-updates/native",
+    command: "oc-windows-updates",
+    permissions: ["windows.manage"],
+  },
 };
 const definition = Object.hasOwn(features, feature ?? "") ? features[feature] : undefined;
-if (!definition) throw new Error("Select a supported optional feature: inventory.");
+if (!definition) throw new Error(`Select a supported optional feature: ${Object.keys(features).join(", ")}.`);
 const platform = values.platform;
 const architecture = { "win-x64": "amd64", "win-arm64": "arm64" }[platform];
 if (!architecture) throw new Error("Select win-x64 or win-arm64.");
@@ -37,9 +43,13 @@ if (!/^(0|[1-9][0-9]{0,4})\.(0|[1-9][0-9]{0,4})\.(0|[1-9][0-9]{0,4})$/u.test(val
   throw new Error("An explicit module version is required.");
 if (!/^[a-z][a-z0-9]*(?:[.-][a-z0-9]+)*$/u.test(values.publisher ?? ""))
   throw new Error("An explicit publisher ID is required.");
-const url = new URL(values["artifact-url"]);
+if (!!values["artifact-url"] === !!values["artifact-origin"])
+  throw new Error("Supply exactly one artifact-origin or artifact-url.");
+const url = new URL(values["artifact-origin"] ?? values["artifact-url"]);
 if (url.protocol !== "https:" || url.username || url.password || url.hash || url.search)
   throw new Error("Supply an immutable HTTPS artifact URL without credentials or query parameters.");
+if (values["artifact-origin"] && (url.pathname !== "/" || url.port))
+  throw new Error("Artifact origin must use HTTPS on the default port with no path.");
 const issuedAt = Number(values["issued-at"]),
   expiresAt = Number(values["expires-at"]);
 if (
@@ -107,6 +117,7 @@ const archive = Buffer.concat([local, name, bytes, central, name, end]);
 const hash = (value) => createHash("sha256").update(value).digest("hex");
 const archiveName = `${feature}-${values.version}-${platform}.zip`;
 const archiveHash = hash(archive);
+if (values["artifact-origin"]) url.pathname = `/v1/artifacts/${archiveHash}/package.zip`;
 writeFileSync(join(output, archiveName), archive, { flag: "wx" });
 const attestation = {
   schemaVersion: 1,

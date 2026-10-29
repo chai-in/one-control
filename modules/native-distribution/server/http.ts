@@ -6,6 +6,9 @@ import { bearer } from "../../../apps/control-plane/src/security.js";
 
 export function registerNativePublicationRoutes(app: FastifyInstance, { db, config, admin }: RouteContext) {
   const control = createModuleControl(db, config);
+  app.post("/v1/agent/native-artifact-ticket", async (request) =>
+    control.nativeArtifactTicket(bearer(request), request.body),
+  );
   const scope = z.object({ id: z.uuid() });
   app.post("/v1/authority/native-custody/activate", async (request) => {
     const actor = await admin(request, "operator");

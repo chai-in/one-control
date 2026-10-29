@@ -77,11 +77,10 @@ test("independent PostgreSQL migrators serialize a populated frozen v1 upgrade e
     await db.withMigrator(async () => {}); // Explicit fixture grants for newly created runtime tables.
     expect(await currentSchemaReady(db)).toBe(true);
     expect(await db.query("SELECT to_jsonb(d)::text AS row FROM devices d")).toEqual(before);
-    expect(await db.query("SELECT version FROM schema_migrations ORDER BY version")).toEqual([
-      { version: 1 },
-      { version: 2 },
-    ]);
-    expect(await db.query("SELECT count(*)::int AS count FROM migration_metadata")).toEqual([{ count: 1 }]);
+    expect(await db.query("SELECT version FROM schema_migrations ORDER BY version")).toEqual(
+      Array.from({ length: 10 }, (_, index) => ({ version: index + 1 })),
+    );
+    expect(await db.query("SELECT count(*)::int AS count FROM migration_metadata")).toEqual([{ count: 9 }]);
     expect(await db.query("SELECT enrollment_id FROM credentials")).toEqual([{ enrollment_id: null }]);
     await migrate(first);
   });

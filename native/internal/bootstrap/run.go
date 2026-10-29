@@ -54,7 +54,9 @@ func (installation *Installation) Run(ctx context.Context, ready func()) (result
 	if err = protectedstore.Create(packageRoot); err != nil {
 		return err
 	}
-	delivery, err := packages.Open(packages.Options{Origins: installation.Config.ArtifactOrigins, Networks: installation.Networks, Roots: installation.TLSRoots, Trust: installation.Trust, PublisherKeys: installation.Config.Publishers, StagingRoot: packageRoot})
+	delivery, err := packages.Open(packages.Options{Origins: installation.Config.ArtifactOrigins, Networks: installation.Networks, Roots: installation.TLSRoots, Trust: installation.Trust, PublisherKeys: installation.Config.Publishers, StagingRoot: packageRoot, ResolveURL: func(ctx context.Context, artifact packages.Approval) (string, error) {
+		return client.ResolveArtifactURL(ctx, artifact)
+	}})
 	if err != nil {
 		return err
 	}
@@ -125,10 +127,10 @@ func (installation *Installation) Run(ctx context.Context, ready func()) (result
 			if !reflect.DeepEqual(binding, state.Enrollment) {
 				return errors.New("enrollment_binding_mismatch")
 			}
-			if e = client.Reconcile(ctx, manager); e != nil {
+			if e = client.Heartbeat(ctx); e != nil {
 				return e
 			}
-			if e = client.Report(ctx, manager, outbox, nil); e != nil {
+			if e = client.Reconcile(ctx, manager); e != nil {
 				return e
 			}
 			policy, e := manager.Policy(time.Now().Unix())

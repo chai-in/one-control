@@ -30,21 +30,18 @@ test("PostgreSQL rejects future and gapped migration markers without changing th
     };
     await migrate(migrator);
     expect((await app.inject({ url: "/health/ready" })).statusCode).toBe(200);
-    await db.withMigrator((tx) => tx.query("INSERT INTO schema_migrations(version) VALUES (3)"));
+    await db.withMigrator((tx) => tx.query("INSERT INTO schema_migrations(version) VALUES (11)"));
     await expect(migrate(migrator)).rejects.toThrow("Unsupported database migration history");
     expect((await app.inject({ url: "/health/ready" })).statusCode).toBe(503);
-    expect(await db.query("SELECT version FROM schema_migrations ORDER BY version")).toEqual([
-      { version: 1 },
-      { version: 2 },
-      { version: 3 },
-    ]);
+    expect(await db.query("SELECT version FROM schema_migrations ORDER BY version")).toEqual(
+      Array.from({ length: 11 }, (_, index) => ({ version: index + 1 })),
+    );
     await db.withMigrator((tx) => tx.query("DELETE FROM schema_migrations WHERE version = 1"));
     await expect(migrate(migrator)).rejects.toThrow("Unsupported database migration history");
     expect((await app.inject({ url: "/health/ready" })).statusCode).toBe(503);
-    expect(await db.query("SELECT version FROM schema_migrations ORDER BY version")).toEqual([
-      { version: 2 },
-      { version: 3 },
-    ]);
+    expect(await db.query("SELECT version FROM schema_migrations ORDER BY version")).toEqual(
+      Array.from({ length: 10 }, (_, index) => ({ version: index + 2 })),
+    );
   });
 }, 30_000);
 

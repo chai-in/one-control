@@ -4,6 +4,7 @@ import path from "node:path";
 import pg from "pg";
 import { z } from "zod";
 import { type Database, migrate, openDatabase, type TransactionQuery } from "../src/database.js";
+import { runtimeGrants } from "../src/runtime-privileges.js";
 
 import { frozenV1Units } from "./fixtures/frozen-v1.js";
 
@@ -412,23 +413,16 @@ async function createFixture(
     if (migrationFailed) throw migrationFailure;
     await setup.query(`GRANT USAGE ON SCHEMA ${namespace} TO ${runtime}`);
     if (baseline !== "empty") {
-      await setup.query(`GRANT SELECT ON ALL TABLES IN SCHEMA ${namespace} TO ${runtime}`);
-      for (const table of [
-        "devices",
-        "enrollment_tokens",
-        "credentials",
-        "releases",
-        "batches",
-        "jobs",
-        "audit_events",
-        "idempotency_keys",
-      ]) {
-        await setup.query(`GRANT INSERT ON ${namespace}.${table} TO ${runtime}`);
-      }
-      for (const table of ["devices", "enrollment_tokens", "credentials", "batches", "jobs"]) {
-        await setup.query(`GRANT UPDATE ON ${namespace}.${table} TO ${runtime}`);
-      }
-      await setup.query(`GRANT USAGE ON SEQUENCE ${namespace}.audit_events_sequence_seq TO ${runtime}`);
+      const { rows } = await setup.query<{ tablename: string }>(
+        "SELECT tablename FROM pg_tables WHERE schemaname=$1",
+        [namespace],
+      );
+      for (const statement of runtimeGrants(
+        namespace,
+        runtime,
+        rows.map((row) => row.tablename),
+      ))
+        await setup.query(statement);
     }
     evidence.roles = (
       await setup.query(

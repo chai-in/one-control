@@ -15,6 +15,8 @@ export default defineConfig({
       "tests/rotation-revocation.test.ts",
       "tests/dispatch-revocation.test.ts",
       "tests/releases.test.ts",
+      "tests/native-presence.test.ts",
+      "tests/native-artifacts.test.ts",
       "tests/product-boundary.test.ts",
       "tests/poc-boundary.test.ts",
       "tests/database-fixture.test.ts",

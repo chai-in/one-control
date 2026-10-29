@@ -19,6 +19,10 @@
     {
       "id": "command-host",
       "version": "0.1.0"
+    },
+    {
+      "id": "native-observations",
+      "version": "0.1.0"
     }
   ],
   "permissions": ["inventory.read"],

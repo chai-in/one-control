@@ -47,6 +47,7 @@ type JobStore struct {
 	path, enrollment string
 	state            *jobState
 	poisoned         bool
+	runningID        string
 }
 
 func (store *JobStore) Pending() bool {
@@ -136,6 +137,9 @@ func (c *Client) ExecuteJob(ctx context.Context, manager *lifecycle.Manager, sto
 		return errors.New("native_job_store_unavailable")
 	}
 	if store.state != nil && store.state.Phase != "acknowledged" {
+		if store.state.Phase == "started" && store.runningID == store.state.RequestID {
+			return c.pollTask(ctx, manager, store)
+		}
 		switch store.state.Phase {
 		case "claim-submitted":
 			raw, err := c.request(ctx, http.MethodGet, "/native-claims/"+store.state.RequestID, nil, true)
@@ -240,6 +244,10 @@ func (c *Client) ExecuteJob(ctx context.Context, manager *lifecycle.Manager, sto
 		if lease.ModuleID == "inventory" {
 			permission = "inventory.read"
 		}
+	case "windows.scan", "windows.install":
+		if lease.ModuleID == "windows-updates" {
+			permission = "windows.manage"
+		}
 	}
 	if permission == "" {
 		if err = store.completed("failed", json.RawMessage(`{"reason":"provider_not_available"}`)); err != nil {
@@ -268,6 +276,9 @@ func (c *Client) ExecuteJob(ctx context.Context, manager *lifecycle.Manager, sto
 	next.Phase = "started"
 	if err = store.save(&next); err != nil {
 		return err
+	}
+	if lease.ModuleID == "windows-updates" {
+		return c.startTask(ctx, manager, store, permission)
 	}
 	operationCtx, cancel := context.WithDeadline(ctx, deadline)
 	result, operationErr := manager.Invoke(operationCtx, lease.ModuleID, permission, command.Kind, nil)

@@ -109,7 +109,7 @@ jobs:
       - name: Install locked control-plane test dependencies
         run: pnpm install --frozen-lockfile
       - name: Build isolated POC backup acceptance fixture
-        run: pnpm --filter @one-control/protocol build && pnpm --filter @one-control/control-plane build
+        run: pnpm --filter @one-control/control-plane... build
       - name: Verify Windows API snapshot and IPC lifetime
         run: node --test scripts/tests/local-poc-backup-process.test.mjs
       - name: Verify locked self-contained agent publishing

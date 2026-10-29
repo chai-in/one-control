@@ -11,7 +11,12 @@
     "native": null,
     "windows": null
   },
-  "dependencies": [],
+  "dependencies": [
+    {
+      "id": "native-dispatch",
+      "version": "0.1.0"
+    }
+  ],
   "permissions": [],
   "endpointRelease": "not-accepted"
 }

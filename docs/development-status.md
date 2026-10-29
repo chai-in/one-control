@@ -10,9 +10,12 @@ Windows bootstrap service and protected enrollment storage, a separate native
 inventory host, and server/console adaptations for desktop policies, asset
 management, Falcon, EMA and recovery-key escrow.
 
-Windows update, application update, deployment, recovery and user-session providers
-have been moved into feature folders. Their imported compatibility assembly remains
-migration input. Full native host extraction, macOS installation, file transfer,
+Windows Update now has a separate native host for exact scan/install commands,
+with renewable execution leases and chunked results. The bootstrap stays responsive
+while the host works. Selected packages use short-lived download capabilities,
+and artifacts can be served from the server computer behind TLS ingress.
+Application update, deployment, recovery and user-session compatibility providers
+remain migration input. Remaining native host extraction, macOS installation, file transfer,
 clipboard synchronization, remote access, independent recovery and end-to-end
 acceptance remain unfinished. A registered module is not evidence of a working
 endpoint feature.
@@ -25,9 +28,9 @@ rollback, session isolation and recovery tests pass on the target platforms.
 The 30 October 2026 local verification includes successful TypeScript, Go and
 Windows compatibility builds, native conformance checks and PowerShell parsing.
 The Windows compatibility suite passed 73 tests and skipped 18 requiring elevated
-storage access. The full control-plane suite passed 133 of 143 tests; ten failures
-remain in older dispatch, release and integration fixtures after scoped enrollment
-became required. An isolated PostgreSQL 18.6 run passed 69 of 81 tests and cleaned
-up its owned server. These failures are not waived for deployment. Elevated Windows
-storage coverage, remaining provider implementation and live endpoint acceptance
-are still required.
+storage access. The full control-plane suite now passes all 145 tests. Dispatch and
+release tests exercise actual native custody, signed publication, scoped selection
+and enrollment. An isolated PostgreSQL 18.6 run passes all 83 required tests and
+cleans up its owned server. Native Windows secret-storage tests require elevation
+and fail rather than skip in Windows CI. Remaining provider implementation,
+elevated CI results and live endpoint acceptance are still required.

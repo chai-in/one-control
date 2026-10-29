@@ -341,4 +341,5 @@ test.each([false, true])(
     expect((await db.snapshotLocal()).size).toBeGreaterThan(0);
     await db.close();
   },
+  30_000,
 );

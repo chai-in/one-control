@@ -7,6 +7,7 @@ import { buildApp } from "../src/app.js";
 import { parseConfig } from "../src/config.js";
 import { verifyRelease } from "../src/security.js";
 import { openTestDatabase } from "./database-fixture.js";
+import { nativeFixture } from "./native-fixture.js";
 
 const directory = mkdtempSync(join(tmpdir(), "one-control-trust-"));
 const keys = generateKeyPairSync("rsa", { modulusLength: 3072 });
@@ -74,18 +75,17 @@ test("an agent update cannot target an older or unavailable recovery bootstrap",
   const db = await openTestDatabase();
   const operator = "release-operator-".repeat(4);
   const approver = "release-approver-".repeat(4);
-  const app = await buildApp(db, { ...config, DEV_OPERATOR_TOKEN: operator, DEV_APPROVER_TOKEN: approver });
+  const native = await nativeFixture(operator);
+  const app = await buildApp(db, {
+    ...config,
+    ...native.config,
+    DEV_OPERATOR_TOKEN: operator,
+    DEV_APPROVER_TOKEN: approver,
+  });
   const headers = { authorization: `Bearer ${operator}` };
   try {
-    const token = await app.inject({ method: "POST", url: "/v1/enrollment-tokens", headers, payload: {} });
-    expect(token.statusCode).toBe(201);
-    const enrollment = await app.inject({
-      method: "POST",
-      url: "/v1/agent/enroll",
-      payload: { token: token.json().token, hostname: "recovery-capability-canary" },
-    });
-    expect(enrollment.statusCode).toBe(201);
-    const enrolled = enrollment.json();
+    await native.prepare(app);
+    const enrolled = await native.enroll(app);
     const release = await app.inject({
       method: "POST",
       url: "/v1/releases",
@@ -109,15 +109,15 @@ test("an agent update cannot target an older or unavailable recovery bootstrap",
     const blocked = await request();
     expect(blocked.statusCode).toBe(409);
     expect(blocked.json().error).toBe("agent_recovery_unavailable");
-    await app.inject({
-      method: "POST",
-      url: "/v1/agent/heartbeat",
-      headers: { authorization: `Bearer ${enrolled.credential}` },
-      payload: { inventory: { agentRecoveryReady: true } },
-    });
+    // Model an accepted recovery capability observation, not a legacy heartbeat.
+    await db.query("UPDATE devices SET inventory=$2 WHERE id=$1", [
+      enrolled.deviceId,
+      JSON.stringify({ agentRecoveryReady: true }),
+    ]);
     expect((await request()).statusCode).toBe(201);
   } finally {
     await app.close();
     await db.close();
+    await native.close();
   }
 }, 30000);

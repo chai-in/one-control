@@ -1,6 +1,6 @@
 export const definition = {
   id: "command-host",
-  dependencies: [],
+  dependencies: ["native-dispatch"],
   permissions: [],
   routes: [],
 };

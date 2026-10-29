@@ -12,7 +12,7 @@
     "dev:console": "pnpm --filter @one-control/console dev",
     "build": "pnpm -r build",
     "typecheck": "pnpm -r typecheck",
-    "test": "pnpm --filter @one-control/modules test && pnpm --filter @one-control/protocol build && pnpm --filter @one-control/control-plane build && tsx --test apps/console/tests/view-model.test.mjs apps/console/tests/device-health.test.mjs apps/console/tests/api-errors.test.mjs scripts/tests/local-poc-config.test.mjs scripts/tests/local-poc-backup.test.mjs scripts/tests/local-poc-backup-process.test.mjs scripts/tests/artifact-storage.test.mjs scripts/tests/native-tooling.test.mjs && pnpm --filter @one-control/artifacts test && pnpm --filter @one-control/control-plane test",
+    "test": "pnpm --filter @one-control/control-plane... build && pnpm --filter @one-control/modules test && tsx --test apps/console/tests/view-model.test.mjs apps/console/tests/device-health.test.mjs apps/console/tests/api-errors.test.mjs scripts/tests/local-poc-config.test.mjs scripts/tests/local-poc-backup.test.mjs scripts/tests/local-poc-backup-process.test.mjs scripts/tests/artifact-storage.test.mjs scripts/tests/native-tooling.test.mjs scripts/tests/native-release.test.mjs && pnpm --filter @one-control/artifacts test && pnpm --filter @one-control/control-plane test",
     "test:native": "node scripts/check-native.mjs",
     "lint": "biome check .",
     "format": "biome check --write .",

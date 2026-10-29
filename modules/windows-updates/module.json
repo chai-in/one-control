@@ -8,7 +8,7 @@
   "source": {
     "server": null,
     "console": null,
-    "native": null,
+    "native": "native",
     "windows": "windows"
   },
   "dependencies": [

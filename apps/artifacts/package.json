@@ -5,6 +5,7 @@
   "scripts": {
     "typecheck": "tsc --noEmit",
     "build": "tsc --outDir dist",
+    "start:local": "node server/local.mjs",
     "test": "pnpm build && node --test tests/*.test.mjs"
   },
   "license": "AGPL-3.0-only"

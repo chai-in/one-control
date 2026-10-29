@@ -6,6 +6,10 @@ import { paramsSchema, type RouteContext } from "./context.js";
 
 export function registerModuleRoutes(app: FastifyInstance, { db, config, admin }: RouteContext) {
   const control = createModuleControl(db, config);
+  app.post("/v1/agent/native-heartbeat", async (request) => {
+    z.strictObject({}).parse(request.body);
+    return control.heartbeat(bearer(request));
+  });
   app.patch("/v1/scopes/:id/native-enrollments/:enrollmentId/ring", async (request) => {
     const actor = await admin(request, "operator"),
       { id, enrollmentId } = z.object({ id: z.uuid(), enrollmentId: z.uuid() }).parse(request.params);

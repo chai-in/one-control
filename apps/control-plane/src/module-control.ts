@@ -174,6 +174,20 @@ export function createModuleControl(db: Database, config: Config) {
     }
   }
   return Object.freeze({
+    async heartbeat(credential: string) {
+      return db.transaction(async (tx) => {
+        const enrollment = await nativeCredential(tx, hash(credential));
+        const [row] = await tx.query<{ last_seen_at: Date }>(
+          "UPDATE devices SET last_seen_at=clock_timestamp() WHERE id=$1 RETURNING last_seen_at",
+          [enrollment.device_id],
+        );
+        return {
+          deviceId: enrollment.device_id,
+          enrollmentId: enrollment.id,
+          observedAt: new Date(row!.last_seen_at).toISOString(),
+        };
+      });
+    },
     ...nativePublicationControl(db, config, {
       async scope(tx, actor, id, permission) {
         role(actor, permission === "view" ? "viewer" : "operator");

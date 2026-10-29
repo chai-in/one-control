@@ -51,6 +51,7 @@ type Options struct {
 	StagingRoot   string
 	Timeout       time.Duration
 	Limits        Limits
+	ResolveURL    func(context.Context, Approval) (string, error)
 }
 type Delivery struct {
 	options  Options
@@ -199,6 +200,17 @@ func (d *Delivery) fetch(ctx context.Context, a Approval) ([]byte, error) {
 	}
 	ctx, cancel := context.WithTimeout(ctx, d.options.Timeout)
 	defer cancel()
+	if d.options.ResolveURL != nil {
+		resolved, err := d.options.ResolveURL(ctx, a)
+		if err != nil {
+			return nil, errors.New("artifact_authorization_unavailable")
+		}
+		ticket, err := checkedURL(resolved)
+		if err != nil || ticket.Scheme != u.Scheme || ticket.Host != u.Host || ticket.EscapedPath() != u.EscapedPath() {
+			return nil, errors.New("artifact_authorization_mismatch")
+		}
+		u = ticket
+	}
 	port := u.Port()
 	if port == "" {
 		port = "443"
@@ -236,7 +248,7 @@ func (d *Delivery) fetch(ctx context.Context, a Approval) ([]byte, error) {
 	req.Header.Set("Accept-Encoding", "identity")
 	resp, e := client.Do(req)
 	if e != nil {
-		return nil, e
+		return nil, errors.New("artifact_transport_failed")
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK || resp.Header.Get("Content-Encoding") != "" || resp.Header.Get("Content-Type") != "application/zip" || resp.ContentLength != a.Size || len(resp.TransferEncoding) != 0 {
