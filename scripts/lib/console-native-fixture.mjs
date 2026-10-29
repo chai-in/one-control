@@ -25,6 +25,7 @@ export async function consoleNativeFixture() {
       "windows-updates",
       "indexing",
       "application-updates",
+      "user-session-host",
       "store-updates",
       "deployment",
     ],

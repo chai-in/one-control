@@ -138,7 +138,7 @@ func (installation *Installation) Run(ctx context.Context, ready func()) (result
 				return e
 			}
 			status.CommandError = ""
-			if jobs.Pending() || policy.Enabled["inventory"] != "" || policy.Enabled["windows-updates"] != "" || policy.Enabled["deployment"] != "" || policy.Enabled["indexing"] != "" {
+			if jobs.Pending() || policy.Enabled["inventory"] != "" || policy.Enabled["windows-updates"] != "" || policy.Enabled["deployment"] != "" || policy.Enabled["indexing"] != "" || policy.Enabled["user-session-host"] != "" || policy.Enabled["application-updates"] != "" {
 				if e = client.ExecuteJob(ctx, manager, jobs); e != nil {
 					status.CommandError = e.Error()
 				}

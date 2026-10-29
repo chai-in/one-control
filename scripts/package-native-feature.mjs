@@ -23,6 +23,16 @@ const { values } = parseArgs({
 });
 const feature = values.feature;
 const features = {
+  "application-updates": {
+    directory: "modules/application-updates/native",
+    command: "oc-applications",
+    permissions: ["applications.manage"],
+  },
+  "user-session-host": {
+    directory: "modules/user-session-host/native",
+    command: "oc-sessions",
+    permissions: ["sessions.read"],
+  },
   indexing: {
     directory: "modules/indexing/native",
     command: "oc-indexing",
@@ -144,7 +154,7 @@ const manifest = {
   kind: "feature",
   minimumBootstrap: "0.1.0",
   permissions: definition.permissions,
-  dependencies: {},
+  dependencies: definition.dependencies ?? {},
   artifacts: { [platform]: { url: url.href, sha256: archiveHash, size: archive.length } },
 };
 const save = (name, data) =>

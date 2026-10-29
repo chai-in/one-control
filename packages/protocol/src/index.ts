@@ -4,8 +4,31 @@ export const contextSchema = z.enum(["system", "user"]);
 export const ringSchema = z.enum(["canary", "pilot", "broad"]);
 export const packageIdSchema = z.string().regex(/^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/);
 export const windowsUpdateSchema = z.object({ id: z.uuid(), revision: z.int().min(1) }).strict();
+export const userSessionSchema = z
+  .object({
+    sessionId: z.int().min(1).max(4294967294),
+    userSid: z.string().regex(/^S-1-[0-9]+(?:-[0-9]+){1,15}$/),
+    logonId: z.string().regex(/^[a-f0-9]{16}$/),
+  })
+  .strict();
 export const commandSchema = z.discriminatedUnion("kind", [
   z.object({ kind: z.literal("inventory.scan") }).strict(),
+  z.object({ kind: z.literal("sessions.list") }).strict(),
+  z.object({ kind: z.literal("applications.check"), session: userSessionSchema }).strict(),
+  z
+    .object({
+      kind: z.literal("applications.upgrade"),
+      session: userSessionSchema,
+      packageId: packageIdSchema,
+      version: z
+        .string()
+        .regex(/^[A-Za-z0-9][A-Za-z0-9._+()-]{0,63}$/)
+        .refine(
+          (value) => !["latest", "unknown"].includes(value.toLowerCase()),
+          "A pinned package version is required",
+        ),
+    })
+    .strict(),
   z.object({ kind: z.literal("windows.scan") }).strict(),
   z.object({ kind: z.literal("indexing.status") }).strict(),
   z
@@ -42,7 +65,13 @@ export function commandContext(command: Command): ExecutionContext {
   return ["winget.upgrade", "store.upgrade"].includes(command.kind) ? "user" : "system";
 }
 export function isMutation(command: Command): boolean {
-  return !["inventory.scan", "windows.scan", "indexing.status"].includes(command.kind);
+  return ![
+    "inventory.scan",
+    "windows.scan",
+    "indexing.status",
+    "sessions.list",
+    "applications.check",
+  ].includes(command.kind);
 }
 export const manifestSchema = z
   .object({
@@ -90,6 +119,8 @@ export const createJobSchema = z
   })
   .strict()
   .superRefine((value, ctx) => {
+    if ("session" in value.command && value.targets.length !== 1)
+      ctx.addIssue({ code: "custom", message: "A selected-user operation requires exactly one computer" });
     const duration = Date.parse(value.endsAt) - Date.parse(value.startsAt);
     if (duration < 60_000 || duration > 24 * 60 * 60 * 1000)
       ctx.addIssue({ code: "custom", message: "Maintenance window must be 1 minute to 24 hours" });

@@ -17,11 +17,15 @@ import { definition as nativeObservations } from "../../../modules/native-observ
 import { definition as observations } from "../../../modules/observations/definition.js";
 import { definition as recoveryEscrow } from "../../../modules/recovery-escrow/definition.js";
 import { definition as storeUpdates } from "../../../modules/store-updates/definition.js";
+import { definition as userSessions } from "../../../modules/user-session-host/definition.js";
 import { definition as windowsUpdates } from "../../../modules/windows-updates/definition.js";
 import { createModuleRegistry } from "./module-registry.js";
 
 export const commandModules = {
   "inventory.scan": "inventory",
+  "sessions.list": "user-session-host",
+  "applications.check": "application-updates",
+  "applications.upgrade": "application-updates",
   "windows.scan": "windows-updates",
   "windows.install": "windows-updates",
   "indexing.status": "indexing",
@@ -47,6 +51,7 @@ const featureDefinitions = [
   integrationHttp,
   inventory,
   indexing,
+  userSessions,
   windowsUpdates,
   applicationUpdates,
   storeUpdates,

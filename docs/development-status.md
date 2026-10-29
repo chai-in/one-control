@@ -18,8 +18,10 @@ Windows Search indexing now has its own downloadable host and console receipts
 for catalog/service status, configured crawl rules, approved enable/disable and
 explicit service-stop fallback pause/resume. Timed pause, custom rule changes and
 baseline restoration remain open.
-Application update, deployment, recovery and user-session compatibility providers
-remain migration input. Remaining native host extraction, macOS installation, file transfer,
+User-session discovery and explicit-logon WinGet checks/pinned user upgrades now
+have separate native hosts. Real standard-user execution and session-switch
+acceptance remain open. Deployment and recovery compatibility providers remain
+migration input. Remaining native host extraction, macOS installation, file transfer,
 clipboard synchronization, remote access, independent recovery and end-to-end
 acceptance remain unfinished. A registered module is not evidence of a working
 endpoint feature.
@@ -38,10 +40,11 @@ control-plane suite includes native dispatch, indexing admission and scope-filte
 release tests exercise actual native custody, signed publication, scoped selection
 and enrollment. Isolated PostgreSQL 18.6 runs use restricted runtime roles and
 cleans up its owned server. Native Windows secret-storage tests require elevation
-and fail rather than skip in Windows CI. At commit `234b658`, both verification
+and fail rather than skip in Windows CI. At commit `e2719dd`, both verification
 workflows pass. Windows CI installs a signed bootstrap as a SYSTEM service, proves
 zero feature downloads with empty selection, downloads Inventory only when selected,
 restarts with Inventory enabled without another download, and checks deselection
-and revocation. The next increment adds selected Indexing download and actual
-read-only command execution to this same pilot. Remaining provider implementation and live endpoint
+and revocation. Selected Indexing download and actual read-only command execution
+also pass in that pilot. The next increment adds session discovery and explicit
+rejection of an unavailable selected logon. Remaining provider implementation and live endpoint
 acceptance are still required.

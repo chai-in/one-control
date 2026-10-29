@@ -68,13 +68,15 @@ export async function nativeFixture(
     }),
   );
   const permissions = [...new Set(serverModules.modules.flatMap((module) => [...module.permissions]))];
-  const featureIds = options.features ?? [
+  const requestedFeatures = options.features ?? [
     "inventory",
     "windows-updates",
     "application-updates",
+    "user-session-host",
     "store-updates",
     "deployment",
   ];
+  const featureIds = [...new Set(requestedFeatures)];
   const attestations: string[] = [];
   const entries = featureIds.map((id) => {
     const artifact = options.artifacts?.[id] ?? {

@@ -8,10 +8,11 @@
   "source": {
     "server": null,
     "console": null,
-    "native": null,
+    "native": "native",
     "windows": "windows"
   },
   "dependencies": [
+    { "id": "user-session-host", "version": "0.1.0" },
     {
       "id": "command-host",
       "version": "0.1.0"

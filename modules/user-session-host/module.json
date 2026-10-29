@@ -7,11 +7,11 @@
   "distribution": "server-catalog",
   "source": {
     "server": null,
-    "console": null,
-    "native": null,
+    "console": "console",
+    "native": "native",
     "windows": "windows"
   },
-  "dependencies": [],
-  "permissions": [],
+  "dependencies": [{ "id": "command-host", "version": "0.1.0" }],
+  "permissions": ["sessions.read"],
   "endpointRelease": "not-accepted"
 }

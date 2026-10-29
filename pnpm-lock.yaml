@@ -411,7 +411,17 @@ importers:
 
   modules/store-updates: {}
 
-  modules/user-session-host: {}
+  modules/user-session-host:
+    dependencies:
+      '@one-control/protocol':
+        specifier: workspace:*
+        version: link:../../packages/protocol
+      '@types/react':
+        specifier: ^19.3.0
+        version: 19.3.0
+      react:
+        specifier: ^19.3.0
+        version: 19.3.0
 
   modules/wake-relay: {}
 

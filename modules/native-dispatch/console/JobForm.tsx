@@ -8,8 +8,14 @@ import {
   type OperationDraft,
   type Release,
 } from "../../../apps/console/src/view-model.js";
+import { sessionChoices } from "../../user-session-host/console/session-choices.js";
 
 const descriptions: Record<Command["kind"], string> = {
+  "sessions.list": "Read signed-in console and RDP sessions. No user task is started by this operation.",
+  "applications.check":
+    "Check WinGet availability in the explicitly selected user session. This does not install or upgrade an application.",
+  "applications.upgrade":
+    "Upgrade one exact WinGet package/version for the selected user. Requires independent approval; no elevation or automatic reboot is permitted.",
   "inventory.scan":
     "Collect the computer’s current agent, Windows and application inventory. This does not install software.",
   "windows.scan":
@@ -67,6 +73,9 @@ export function JobForm({
   const [updates, setUpdates] = useState<string[]>([]);
   const [search, setSearch] = useState("");
   const [formError, setFormError] = useState("");
+  const [sessionKey, setSessionKey] = useState("");
+  const sessions = sessionChoices(jobs, selected);
+  const targetSession = sessions.find((session) => session.key === sessionKey)?.target;
   const applicable = commonUpdates(jobs, selected);
   const chosenUpdates = applicable.updates.filter((update) =>
     updates.includes(`${update.id}:${update.revision}`),
@@ -75,10 +84,17 @@ export function JobForm({
   const shownTargets = targets.filter((device) =>
     device.hostname.toLowerCase().includes(search.toLowerCase()),
   );
-  const mutating = !["inventory.scan", "windows.scan", "indexing.status"].includes(kind);
+  const mutating = ![
+    "inventory.scan",
+    "windows.scan",
+    "indexing.status",
+    "sessions.list",
+    "applications.check",
+  ].includes(kind);
   function changeTargets(ids: string[]) {
     setSelected(ids);
     setUpdates([]);
+    setSessionKey("");
   }
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -86,6 +102,14 @@ export function JobForm({
     try {
       const data = new FormData(event.currentTarget);
       let command: unknown = { kind };
+      if (kind === "applications.check") command = { kind, session: targetSession };
+      if (kind === "applications.upgrade")
+        command = {
+          kind,
+          session: targetSession,
+          packageId: String(data.get("packageId")).trim(),
+          version: String(data.get("version")).trim(),
+        };
       if (kind === "indexing.enable") command = { kind, startup: String(data.get("startup")) };
       if (kind === "windows.install")
         command = { kind, updates: chosenUpdates.map(({ id, revision }) => ({ id, revision })) };
@@ -212,6 +236,33 @@ export function JobForm({
           </p>
         )}
       </fieldset>
+      {(kind === "applications.check" || kind === "applications.upgrade") && (
+        <>
+          <label htmlFor="selected-session">User session</label>
+          <select
+            id="selected-session"
+            required
+            value={sessionKey}
+            onChange={(event) => setSessionKey(event.target.value)}
+          >
+            <option value="">Select a verified user session</option>
+            {sessions.map((session) => (
+              <option key={session.key} value={session.key}>
+                {session.label}
+              </option>
+            ))}
+          </select>
+          {!sessions.length && (
+            <p>
+              Choose one computer and refresh its signed-in sessions first. Session results expire after five
+              minutes.{" "}
+              <button type="button" className="text-button" onClick={() => setKind("sessions.list")}>
+                Read signed-in sessions
+              </button>
+            </p>
+          )}
+        </>
+      )}
       {selected.some(
         (id) => devices.find((device) => device.id === id)?.inventory?.interactiveSessionAvailable === false,
       ) &&
@@ -279,7 +330,7 @@ export function JobForm({
           )}
         </div>
       )}
-      {(kind === "winget.upgrade" || kind === "store.upgrade") && (
+      {(kind === "winget.upgrade" || kind === "store.upgrade" || kind === "applications.upgrade") && (
         <>
           <label htmlFor="packageId">
             {kind === "store.upgrade" ? "Store product ID" : "WinGet package ID"}
@@ -298,7 +349,7 @@ export function JobForm({
           )}
         </>
       )}
-      {kind === "winget.upgrade" && (
+      {(kind === "winget.upgrade" || kind === "applications.upgrade") && (
         <>
           <label htmlFor="version">Exact target version</label>
           <input id="version" name="version" required placeholder="For example, 0.99.0" />

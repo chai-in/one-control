@@ -12,6 +12,7 @@ import {
   text,
 } from "../../../apps/console/src/view-model.js";
 import { IndexingResult } from "../../indexing/console/IndexingResult.js";
+import { SessionResult } from "../../user-session-host/console/SessionResult.js";
 
 export function StateBadge({ state }: { state: Job["state"] }) {
   const status = jobStates[state];
@@ -28,9 +29,17 @@ export function CommandSummary({ job }: { job: Pick<Job, "kind" | "command" | "c
       </div>
       <div>
         <span className="eyebrow">EXECUTION</span>
-        <strong>{job.context === "system" ? "SYSTEM service" : "Signed-in user"}</strong>
+        <strong>
+          {"session" in command
+            ? "Selected user session"
+            : job.context === "system"
+              ? "SYSTEM service"
+              : "Signed-in user"}
+        </strong>
       </div>
-      {(command.kind === "winget.upgrade" || command.kind === "store.upgrade") && (
+      {(command.kind === "winget.upgrade" ||
+        command.kind === "store.upgrade" ||
+        command.kind === "applications.upgrade") && (
         <>
           <div>
             <span className="eyebrow">PACKAGE</span>
@@ -39,10 +48,19 @@ export function CommandSummary({ job }: { job: Pick<Job, "kind" | "command" | "c
           <div>
             <span className="eyebrow">TARGET VERSION</span>
             <strong>
-              {command.kind === "winget.upgrade" ? command.version : "Applicable Store catalogue update"}
+              {command.kind !== "store.upgrade" ? command.version : "Applicable Store catalogue update"}
             </strong>
           </div>
         </>
+      )}
+      {"session" in command && (
+        <div>
+          <span className="eyebrow">SELECTED LOGON</span>
+          <strong>Session {command.session.sessionId}</strong>
+          <small>
+            {command.session.userSid} · {command.session.logonId}
+          </small>
+        </div>
       )}
       {command.kind === "windows.install" && (
         <div>
@@ -91,6 +109,7 @@ function Result({
   return (
     <div className="result-content">
       {job.kind.startsWith("indexing.") && <IndexingResult result={result} />}
+      {job.kind === "sessions.list" && <SessionResult result={result} />}
       {result.reconciledBy !== undefined && (
         <div className="notice">
           <FileCheck2 size={18} />

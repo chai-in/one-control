@@ -19,7 +19,7 @@ import { nativeFixture } from "./native-fixture.js";
 const execute = promisify(execFile);
 const repository = resolve("../..");
 
-test("signed SYSTEM bootstrap downloads selected hosts, preserves restart state, and executes indexing status", async () => {
+test("signed SYSTEM bootstrap downloads selected hosts, preserves restart state, and dispatches indexing and selected-user commands", async () => {
   const run = randomUUID();
   const root = join(process.env.ProgramData!, `OneControlNativeAcceptance-${run}`);
   const serviceRoot = join(process.env.ProgramData!, "OneControlNative");
@@ -62,7 +62,7 @@ test("signed SYSTEM bootstrap downloads selected hosts, preserves restart state,
     { url: string; sha256: string; size: number; files: { path: string; sha256: string; size: number }[] }
   > = {};
   const archives = new Map<string, Buffer>();
-  for (const feature of ["inventory", "indexing"]) {
+  for (const feature of ["inventory", "indexing", "user-session-host", "application-updates"]) {
     const candidate = join(buildRoot, feature);
     await runFile(process.execPath, [
       "scripts/package-native-feature.mjs",
@@ -92,7 +92,7 @@ test("signed SYSTEM bootstrap downloads selected hosts, preserves restart state,
   const operator = randomBytes(32).toString("base64url");
   const native = await nativeFixture(operator, {
     artifactOrigin: origin,
-    features: ["inventory", "indexing"],
+    features: ["inventory", "indexing", "user-session-host", "application-updates"],
     artifacts,
   });
   const db = await openTestDatabase();
@@ -196,8 +196,14 @@ test("signed SYSTEM bootstrap downloads selected hosts, preserves restart state,
         catalogId: row!.catalog_id,
         enabled,
         disabled: [],
-        allowedPermissions: Object.keys(enabled).map((id) =>
-          id === "inventory" ? "inventory.read" : "indexing.manage",
+        allowedPermissions: Object.keys(enabled).map(
+          (id) =>
+            ({
+              inventory: "inventory.read",
+              indexing: "indexing.manage",
+              "user-session-host": "sessions.read",
+              "application-updates": "applications.manage",
+            })[id]!,
         ),
         bootstrapVersion: "0.1.0",
       },
@@ -324,13 +330,60 @@ test("signed SYSTEM bootstrap downloads selected hosts, preserves restart state,
     );
     expect(indexResult?.result.after.service).toBeTypeOf("string");
     expect(indexResult?.result.after.pauseMechanism).toBe("service-stop-fallback");
+    await selection({ "user-session-host": "0.1.0", "application-updates": "0.1.0" });
+    async function userOperation(command: unknown, expected: string) {
+      const response = await app.inject({
+        method: "POST",
+        url: "/v1/batches",
+        headers: { ...headers, "idempotency-key": randomUUID() },
+        payload: {
+          targets: [invitation.json().deviceId],
+          ring: "canary",
+          command,
+          startsAt: new Date(Date.now() - 1000).toISOString(),
+          endsAt: new Date(Date.now() + 3600000).toISOString(),
+        },
+      });
+      expect(response.statusCode, response.body).toBe(201);
+      await until(
+        async () =>
+          (
+            await db.query<{ state: string }>("SELECT state FROM jobs WHERE batch_id=$1", [
+              response.json().batchId,
+            ])
+          )[0]?.state === expected,
+      );
+      return (
+        await db.query<{ result: Record<string, unknown> }>("SELECT result FROM jobs WHERE batch_id=$1", [
+          response.json().batchId,
+        ])
+      )[0]!.result;
+    }
+    const sessions = await userOperation({ kind: "sessions.list" }, "succeeded");
+    expect(Array.isArray(sessions.sessions)).toBe(true);
+    expect(sessions.partial).toBe(false);
+    // This logon cannot exist: prove the SYSTEM host refuses it without a fallback user.
+    const rejected = await userOperation(
+      {
+        kind: "applications.check",
+        session: { sessionId: 4294967294, userSid: "S-1-5-21-1-2-3-1001", logonId: "ffffffffffffffff" },
+      },
+      "failed",
+    );
+    expect(rejected.reason).toBe("selected_user_provider_unavailable");
+    expect(rejected.executionStarted).toBe(false);
+    expect(downloads.slice(2).sort()).toEqual(
+      ["user-session-host", "application-updates"]
+        .map((id) => `artifacts/${artifacts[id]!.sha256}/package.zip`)
+        .sort(),
+    );
     const previous = (await status()).lastSuccess;
     await selection({});
     await until(async () => {
       const current = await status();
       return current?.state === "connected" && current.lastSuccess !== previous;
     });
-    expect(downloads).toHaveLength(2);
+    expect(downloads).toHaveLength(4);
     const revoked = await app.inject({
       method: "POST",
       url: `/v1/scopes/${native.scopeId}/native-enrollments/${enrolled!.enrollmentId}/revoke`,

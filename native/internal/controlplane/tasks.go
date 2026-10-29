@@ -16,6 +16,10 @@ func taskPermission(module string) string {
 		return "windows.manage"
 	case "indexing":
 		return "indexing.manage"
+	case "user-session-host":
+		return "sessions.read"
+	case "application-updates":
+		return "applications.manage"
 	}
 	return ""
 }

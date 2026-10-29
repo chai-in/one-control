@@ -17,6 +17,9 @@ export type Release = {
 };
 export const labels: Record<string, string> = {
   "inventory.scan": "Inventory refresh",
+  "sessions.list": "Signed-in user sessions",
+  "applications.check": "Check selected user's WinGet",
+  "applications.upgrade": "Upgrade selected user's application",
   "windows.scan": "Windows Update scan",
   "windows.install": "Windows Update install",
   "indexing.status": "Windows Search status",

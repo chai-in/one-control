@@ -240,6 +240,14 @@ func (c *Client) ExecuteJob(ctx context.Context, manager *lifecycle.Manager, sto
 	}
 	permission := ""
 	switch command.Kind {
+	case "applications.check", "applications.upgrade":
+		if lease.ModuleID == "application-updates" {
+			permission = "applications.manage"
+		}
+	case "sessions.list":
+		if lease.ModuleID == "user-session-host" {
+			permission = "sessions.read"
+		}
 	case "inventory.scan":
 		if lease.ModuleID == "inventory" {
 			permission = "inventory.read"
