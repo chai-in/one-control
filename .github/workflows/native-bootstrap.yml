@@ -2,6 +2,10 @@ name: Native bootstrap foundation
 on:
   push:
     paths:
+      - "apps/control-plane/**"
+      - "apps/artifacts/**"
+      - "scripts/tests/native-test-certificate.ps1"
+      - "scripts/package-native-feature.mjs"
       - "native/**"
       - "modules/**"
       - "go.work"
@@ -17,6 +21,10 @@ on:
       - ".github/workflows/native-bootstrap.yml"
   pull_request:
     paths:
+      - "apps/control-plane/**"
+      - "apps/artifacts/**"
+      - "scripts/tests/native-test-certificate.ps1"
+      - "scripts/package-native-feature.mjs"
       - "native/**"
       - "modules/**"
       - "go.work"
@@ -68,3 +76,12 @@ jobs:
           include-hidden-files: true
           if-no-files-found: warn
           retention-days: 7
+      - name: Build native installation acceptance server
+        if: runner.os == 'Windows'
+        run: pnpm --filter @one-control/control-plane... build
+      - name: Verify selected downloads with the real Windows bootstrap
+        if: runner.os == 'Windows'
+        run: pnpm --filter @one-control/control-plane exec vitest run --config vitest.native.config.ts
+        env:
+          ONE_CONTROL_NATIVE_ACCEPTANCE: "true"
+          GOTOOLCHAIN: local

@@ -162,6 +162,10 @@ aside {
 nav {
   display: grid;
   gap: 7px;
+  min-height: 0;
+  overflow-y: auto;
+  align-content: start;
+  flex: 1;
 }
 nav button {
   background: none;
@@ -196,6 +200,7 @@ nav button.selected:before {
 }
 .sidebar-footer {
   margin-top: auto;
+  flex-shrink: 0;
   border-top: 1px solid #24313a;
   padding-top: 20px;
   font-size: 10px;
@@ -1418,8 +1423,18 @@ footer > span:first-child {
     font-size: 18px;
   }
   .workspace-label,
-  .sidebar-footer {
+  .sidebar-footer .system-note,
+  .sidebar-footer small {
     display: none;
+  }
+  .sidebar-footer {
+    margin-top: 10px;
+    padding-top: 10px;
+    text-align: right;
+  }
+  .sidebar-footer button {
+    margin-top: 0;
+    padding: 6px;
   }
   nav {
     display: flex;

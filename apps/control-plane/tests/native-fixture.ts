@@ -10,7 +10,16 @@ import { serverModules } from "../src/server-modules.js";
 
 // Fresh, disposable signing custody. No installed authority or network artifact
 // service is used: these tests exercise the actual publication and dispatch API.
-export async function nativeFixture(operator: string) {
+export async function nativeFixture(
+  operator: string,
+  options: {
+    artifactOrigin?: string;
+    artifacts?: Record<
+      string,
+      { url: string; sha256: string; size: number; files: { path: string; sha256: string; size: number }[] }
+    >;
+  } = {},
+) {
   const directory = await mkdtemp(join(tmpdir(), "one-control-native-test-"));
   const scopeId = randomUUID();
   const artifactKey = randomBytes(32);
@@ -18,6 +27,7 @@ export async function nativeFixture(operator: string) {
   await writeFile(artifactKeyFile, artifactKey, { mode: 0o600 });
   const headers = { authorization: `Bearer ${operator}` };
   const now = Math.floor(Date.now() / 1000);
+  const artifactOrigin = options.artifactOrigin ?? "https://artifacts.example";
   const roles = ["catalog", "policy", "freshness", "publisher"] as const;
   const domains = [
     "module-catalog.v2",
@@ -53,13 +63,19 @@ export async function nativeFixture(operator: string) {
       keys,
       signers,
       publishers: { fixture: ["publisher"] },
-      artifactOrigins: ["https://artifacts.example/"],
+      artifactOrigins: [`${artifactOrigin}/`],
     }),
   );
   const permissions = [...new Set(serverModules.modules.flatMap((module) => [...module.permissions]))];
   const featureIds = ["inventory", "windows-updates", "application-updates", "store-updates", "deployment"];
   const attestations: string[] = [];
   const entries = featureIds.map((id) => {
+    const artifact = options.artifacts?.[id] ?? {
+      url: `${artifactOrigin}/v1/artifacts/${"a".repeat(64)}/package.zip`,
+      sha256: "a".repeat(64),
+      size: 100,
+      files: [{ path: "bin/host.exe", sha256: "b".repeat(64), size: 10 }],
+    };
     const payload = Buffer.from(
       JSON.stringify({
         schemaVersion: 1,
@@ -68,9 +84,9 @@ export async function nativeFixture(operator: string) {
         platform: "win-x64",
         publisher: "fixture",
         layout: "native-host-v1",
-        archiveSha256: "a".repeat(64),
-        archiveSize: 100,
-        files: [{ path: "bin/host.exe", sha256: "b".repeat(64), size: 10 }],
+        archiveSha256: artifact.sha256,
+        archiveSize: artifact.size,
+        files: artifact.files,
         issuedAt: now - 1,
         expiresAt: now + 7200,
       }),
@@ -106,9 +122,9 @@ export async function nativeFixture(operator: string) {
         dependencies: {},
         artifacts: {
           "win-x64": {
-            url: `https://artifacts.example/v1/artifacts/${"a".repeat(64)}/package.zip`,
-            sha256: "a".repeat(64),
-            size: 100,
+            url: artifact.url,
+            sha256: artifact.sha256,
+            size: artifact.size,
           },
         },
       },
@@ -136,6 +152,13 @@ export async function nativeFixture(operator: string) {
   return {
     scopeId,
     artifactKey: artifactKey.toString("base64url"),
+    installationTrust: {
+      keys,
+      rootVersion: "1",
+      authorityEpoch: "1",
+      publishers: { fixture: ["publisher"] },
+      artifactOrigins: [artifactOrigin],
+    },
     config: {
       NATIVE_AUTHORITY_CONFIG: configuration,
       CREDENTIAL_ROOT: directory,

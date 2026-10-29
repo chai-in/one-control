@@ -141,8 +141,10 @@ try {
   await submit(4);
   assert.notEqual(mutations[0].key, mutations[3].key);
   await page.getByRole("button", { name: "Close dialog", exact: true }).click();
+  await page.setViewportSize({ width: 390, height: 844 });
   await page.getByRole("button", { name: /Sign out/ }).click();
   await login();
+  await page.setViewportSize({ width: 1280, height: 720 });
   await open();
   await submit(5);
   assert.notEqual(mutations[3].key, mutations[4].key);

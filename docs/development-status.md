@@ -28,9 +28,12 @@ rollback, session isolation and recovery tests pass on the target platforms.
 The 30 October 2026 local verification includes successful TypeScript, Go and
 Windows compatibility builds, native conformance checks and PowerShell parsing.
 The Windows compatibility suite passed 73 tests and skipped 18 requiring elevated
-storage access. The full control-plane suite now passes all 145 tests. Dispatch and
+storage access locally; Windows CI passes all 101 expanded compatibility cases with
+no skips, and the native suite passes on Windows, Linux and macOS. The full
+control-plane suite now passes all 145 tests. Dispatch and
 release tests exercise actual native custody, signed publication, scoped selection
 and enrollment. An isolated PostgreSQL 18.6 run passes all 83 required tests and
 cleans up its owned server. Native Windows secret-storage tests require elevation
-and fail rather than skip in Windows CI. Remaining provider implementation,
-elevated CI results and live endpoint acceptance are still required.
+and fail rather than skip in Windows CI. Clean installation acceptance is being
+added to the Windows job. Remaining provider implementation and live endpoint
+acceptance are still required.
