@@ -9,6 +9,7 @@ import {
 } from "@one-control/protocol";
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
+import { readAuditHistory } from "../audit-history.js";
 import type { TransactionQuery } from "../database.js";
 import { createModuleControl } from "../module-control.js";
 import { ApiError, hash, verifyRelease } from "../security.js";
@@ -299,7 +300,7 @@ export function registerJobsRoutes(app: FastifyInstance, { db, admin, config }: 
     return { ok: true };
   });
   app.get("/v1/audit", async (request) => {
-    await admin(request, "viewer");
+    const actor = await admin(request, "viewer");
     const { after, direction } = z
       .object({
         after: z.coerce.number().int().min(0).default(0),
@@ -307,10 +308,7 @@ export function registerJobsRoutes(app: FastifyInstance, { db, admin, config }: 
       })
       .parse(request.query);
     return {
-      events: await db.query(
-        `SELECT sequence,actor,action,subject,detail,created_at FROM audit_events a WHERE sequence>$1 AND action NOT LIKE 'scope.%' AND action NOT LIKE 'native.%' AND NOT EXISTS(SELECT 1 FROM jobs j JOIN native_enrollments e ON e.device_id=j.device_id WHERE j.id::text=a.subject OR j.batch_id::text=a.subject) ORDER BY sequence ${direction === "latest" ? "DESC" : "ASC"} LIMIT 500`,
-        [after],
-      ),
+      events: await readAuditHistory(db, actor, after, direction),
     };
   });
 }

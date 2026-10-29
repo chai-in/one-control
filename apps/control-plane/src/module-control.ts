@@ -8,6 +8,7 @@ import {
   revealInput,
   revealRecoveryKey,
 } from "../../../modules/recovery-escrow/server/escrow.js";
+import { readAuditHistory } from "./audit-history.js";
 import type { Config } from "./config.js";
 import type { Database, TransactionQuery } from "./database.js";
 import { audit } from "./routes/context.js";
@@ -360,10 +361,7 @@ export function createModuleControl(db: Database, config: Config) {
         await scopeLock(tx, id);
         await grant(tx, id, actor, "view");
         return {
-          events: await tx.query(
-            "SELECT sequence,actor,action,subject,detail,created_at FROM audit_events WHERE subject=$1 OR detail->>'scope'=$1 OR subject IN (SELECT id::text FROM native_enrollments WHERE scope_id=$1::uuid) ORDER BY sequence DESC LIMIT 500",
-            [id],
-          ),
+          events: await readAuditHistory(tx, actor, 0, "latest", id),
         };
       });
     },

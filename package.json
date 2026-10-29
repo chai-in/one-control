@@ -18,7 +18,7 @@
     "format": "biome check --write .",
     "check": "pnpm typecheck && pnpm lint && pnpm test && pnpm build",
     "setup:local": "node scripts/setup-local.mjs",
-    "test:console": "node scripts/verify-console.mjs",
+    "test:console": "tsx scripts/verify-console.mjs",
     "test:console:uncertainty": "node scripts/verify-console-uncertainty.mjs",
     "test:postgres": "node scripts/test-postgres.mjs --profile owned-local",
     "test:postgres:ci": "node scripts/test-postgres.mjs --profile ci-service",

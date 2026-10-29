@@ -1,9 +1,9 @@
+import assert from "node:assert/strict";
 import { constants, generateKeyPairSync, randomBytes, randomUUID, sign } from "node:crypto";
 import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { FastifyInstance, InjectOptions } from "fastify";
-import { expect } from "vitest";
 import { nativeSigningBytes } from "../../../modules/native-distribution/server/signing.js";
 import { hash } from "../src/security.js";
 import { serverModules } from "../src/server-modules.js";
@@ -143,7 +143,7 @@ export async function nativeFixture(
   const claims = new Map<string, string>();
   async function checked(app: FastifyInstance, options: InjectOptions, code = 200) {
     const response = await app.inject(options);
-    expect(response.statusCode, response.body).toBe(code);
+    assert.equal(response.statusCode, code, response.body);
     return response.json();
   }
   async function version(app: FastifyInstance) {
@@ -239,24 +239,25 @@ export async function nativeFixture(
         },
       });
     },
-    async enroll(app: FastifyInstance) {
-      const token = randomBytes(32).toString("base64url");
+    async enroll(app: FastifyInstance, hostname = "native-test-workstation", invitationToken?: string) {
+      const token = invitationToken ?? randomBytes(32).toString("base64url");
       const credential = randomBytes(32).toString("base64url");
-      await checked(
-        app,
-        {
-          method: "POST",
-          url: `/v1/scopes/${scopeId}/native-invitations`,
-          headers,
-          payload: {
-            tokenHash: hash(token),
-            hostname: "native-test-workstation",
-            platform: "win-x64",
-            machineId: `windows:${randomUUID()}`,
+      if (!invitationToken)
+        await checked(
+          app,
+          {
+            method: "POST",
+            url: `/v1/scopes/${scopeId}/native-invitations`,
+            headers,
+            payload: {
+              tokenHash: hash(token),
+              hostname,
+              platform: "win-x64",
+              machineId: `windows:${randomUUID()}`,
+            },
           },
-        },
-        201,
-      );
+          201,
+        );
       const enrolled = await checked(
         app,
         {
@@ -298,7 +299,7 @@ export async function nativeFixture(
       });
       const data = response.json();
       if (leaseToken && data.lease) {
-        expect(response.body).not.toContain(leaseToken);
+        assert.equal(response.body.includes(leaseToken), false);
         claims.set(data.lease.id, data.lease.claimId);
         // The client chose this secret before the POST; the server never returns it.
         data.lease.leaseToken = leaseToken;

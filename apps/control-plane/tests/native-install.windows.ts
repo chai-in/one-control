@@ -1,4 +1,4 @@
-import { type ChildProcess, execFile, spawn } from "node:child_process";
+import { execFile } from "node:child_process";
 import { randomBytes, randomUUID } from "node:crypto";
 import { once } from "node:events";
 import { mkdir, readdir, readFile, rm, writeFile } from "node:fs/promises";
@@ -19,9 +19,10 @@ import { nativeFixture } from "./native-fixture.js";
 const execute = promisify(execFile);
 const repository = resolve("../..");
 
-test("clean native bootstrap downloads only the selected inventory host and stops it after deselection", async () => {
+test("signed thin installer runs as SYSTEM, downloads only selected inventory, and survives service restart", async () => {
   const run = randomUUID();
   const root = join(process.env.ProgramData!, `OneControlNativeAcceptance-${run}`);
+  const serviceRoot = join(process.env.ProgramData!, "OneControlNative");
   const buildRoot = join(repository, ".local/native-acceptance", run);
   await mkdir(buildRoot, { recursive: true });
   const bootstrap = join(buildRoot, "oc-bootstrap.exe");
@@ -96,7 +97,18 @@ test("clean native bootstrap downloads only the selected inventory host and stop
   );
   const headers = { authorization: `Bearer ${operator}` };
   const downloads: string[] = [];
-  let child: ChildProcess | undefined;
+  const serviceFixture = (action: string, args: string[] = []) =>
+    runFile("pwsh", [
+      "-NoProfile",
+      "-NonInteractive",
+      "-File",
+      "scripts/tests/native-service-fixture.ps1",
+      "-Action",
+      action,
+      "-FixtureDirectory",
+      root,
+      ...args,
+    ]);
   await runFile("pwsh", [
     "-NoProfile",
     "-NonInteractive",
@@ -181,7 +193,7 @@ test("clean native bootstrap downloads only the selected inventory host and stop
   }
   async function status() {
     try {
-      return JSON.parse(await readFile(join(root, "status.json"), "utf8"));
+      return JSON.parse(await readFile(join(serviceRoot, "status.json"), "utf8"));
     } catch {
       return null;
     }
@@ -189,12 +201,13 @@ test("clean native bootstrap downloads only the selected inventory host and stop
   async function until(check: () => Promise<boolean>) {
     const deadline = Date.now() + 55_000;
     while (!(await check())) {
-      if (child?.exitCode !== null || Date.now() > deadline)
+      if (Date.now() > deadline)
         throw new Error(`Native acceptance stalled: ${JSON.stringify(await status())}`);
       await delay(250);
     }
   }
   try {
+    await serviceFixture("prepare", ["-BootstrapFile", bootstrap]);
     server.listen(443, ip);
     await once(server, "listening");
     await native.prepare(app);
@@ -231,26 +244,43 @@ test("clean native bootstrap downloads only the selected inventory host and stop
     );
     const invitationFile = join(root, "invitation.json");
     await writeFile(invitationFile, JSON.stringify({ token }));
-    const enrolled = JSON.parse(
-      (await runFile(bootstrap, ["--config", config, "--enroll", invitationFile])).stdout,
-    );
+    await serviceFixture("install", [
+      "-BootstrapFile",
+      bootstrap,
+      "-ConfigurationFile",
+      config,
+      "-InvitationFile",
+      invitationFile,
+    ]);
     await rm(invitationFile);
-    child = spawn(bootstrap, ["--config", config, "--run"], {
-      cwd: root,
-      windowsHide: true,
-      stdio: "ignore",
-    });
+    const [enrolled] = await db.query<{ enrollmentId: string }>(
+      'SELECT id AS "enrollmentId" FROM native_enrollments WHERE device_id=$1 AND revoked_at IS NULL',
+      [invitation.json().deviceId],
+    );
+    expect(enrolled).toBeDefined();
     await until(async () => (await status())?.state === "connected");
     expect(downloads).toEqual([]);
-    expect((await readdir(join(root, "modules"))).filter((name) => name.startsWith("package-"))).toEqual([]);
+    expect(
+      (await readdir(join(serviceRoot, "modules"))).filter((name) => name.startsWith("package-")),
+    ).toEqual([]);
     await selection({ inventory: "0.1.0" });
     await until(async () => !!(await status())?.lastInventory);
     expect(downloads).toEqual([`artifacts/${request.archiveSha256}/package.zip`]);
     const [observation] = await db.query<{ kind: string }>(
       "SELECT kind FROM native_observations WHERE enrollment_id=$1",
-      [enrolled.enrollmentId],
+      [enrolled!.enrollmentId],
     );
     expect(observation?.kind).toBe("inventory");
+    const beforeRestart = (await status()).lastSuccess;
+    await serviceFixture("restart");
+    await until(async () => {
+      const current = await status();
+      return current?.state === "connected" && current.lastSuccess !== beforeRestart;
+    });
+    expect(downloads).toHaveLength(1);
+    expect(
+      await db.query("SELECT id FROM native_enrollments WHERE device_id=$1", [invitation.json().deviceId]),
+    ).toHaveLength(1);
     const previous = (await status()).lastSuccess;
     await selection({});
     await until(async () => {
@@ -260,18 +290,14 @@ test("clean native bootstrap downloads only the selected inventory host and stop
     expect(downloads).toHaveLength(1);
     const revoked = await app.inject({
       method: "POST",
-      url: `/v1/scopes/${native.scopeId}/native-enrollments/${enrolled.enrollmentId}/revoke`,
+      url: `/v1/scopes/${native.scopeId}/native-enrollments/${enrolled!.enrollmentId}/revoke`,
       headers,
       payload: {},
     });
     expect(revoked.statusCode).toBe(200);
     await until(async () => (await status())?.state === "unavailable");
   } finally {
-    if (child && child.exitCode === null) {
-      const exited = once(child, "exit");
-      child.kill();
-      await exited;
-    }
+    if ((await readdir(root)).includes("service-fixture.json")) await serviceFixture("cleanup");
     await new Promise<void>((resolve) => server.close(() => resolve()));
     await app.close();
     await db.close();

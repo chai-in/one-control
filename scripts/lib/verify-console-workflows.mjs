@@ -1,17 +1,5 @@
 import assert from "node:assert/strict";
 import { expect } from "@playwright/test";
-import { apiOrigin, consoleOrigin } from "./console-qa-config.mjs";
-
-async function call(path, headers, body) {
-  const response = await fetch(`${apiOrigin}${path}`, {
-    method: body ? "POST" : "GET",
-    headers,
-    ...(body ? { body: JSON.stringify(body) } : {}),
-  });
-  if (!response.ok) throw new Error(`Console fixture request failed: ${path} (${response.status})`);
-  return response.json();
-}
-
 // Every identity used here is created by the caller in the isolated local development API.
 // No Windows service or update provider participates in this browser acceptance exercise.
 export async function verifyOperationalWorkflows({
@@ -22,11 +10,24 @@ export async function verifyOperationalWorkflows({
   secondDevice,
   hostname,
   operatorHeaders,
+  fixture,
+  apiOrigin,
+  consoleOrigin,
 }) {
-  const agentHeaders = { "Content-Type": "application/json", Authorization: `Bearer ${device.credential}` };
-  const { lease } = await call("/v1/agent/claim", agentHeaders, {});
-  assert.equal(lease?.command.kind, "winget.upgrade");
-  await call(`/v1/agent/jobs/${lease.id}/report`, agentHeaders, {
+  async function call(path, headers, body) {
+    if (path.startsWith("/v1/agent/native-")) return fixture.agent(path, headers, body);
+    const response = await fetch(`${apiOrigin}${path}`, {
+      method: body ? "POST" : "GET",
+      headers,
+      ...(body ? { body: JSON.stringify(body) } : {}),
+    });
+    if (!response.ok) throw new Error(`Console fixture request failed: ${path} (${response.status})`);
+    return response.json();
+  }
+  const agentHeaders = { "Content-Type": "application/json", authorization: `Bearer ${device.credential}` };
+  const { lease } = await call("/v1/agent/native-claim", agentHeaders, {});
+  assert.equal(lease?.command.kind, "windows.install");
+  await call(`/v1/agent/native-jobs/${lease.id}/report`, agentHeaders, {
     leaseToken: lease.leaseToken,
     state: "indeterminate",
     result: { testFixture: true, reason: "console_fixture_no_provider_executed" },
@@ -36,7 +37,7 @@ export async function verifyOperationalWorkflows({
   const uncertainRow = page.getByRole("row").filter({ hasText: lease.id.slice(0, 8) });
   await expect(uncertainRow.getByText("Needs reconciliation", { exact: true })).toBeVisible();
   await uncertainRow.getByRole("button", { name: "Review outcome" }).click();
-  const receipt = page.getByRole("dialog", { name: "WinGet application", exact: true });
+  const receipt = page.getByRole("dialog", { name: "Windows Update install", exact: true });
   await receipt.getByRole("button", { name: "Record a verified outcome" }).click();
   const save = receipt.getByRole("button", { name: "Save verified outcome" });
   await expect(save).toBeDisabled();
@@ -102,10 +103,10 @@ export async function verifyOperationalWorkflows({
   await expect(operation.getByRole("checkbox", { name: hostname, exact: true })).toBeChecked();
   await operation.getByRole("button", { name: "Create operation", exact: true }).click();
   await expect(operation).toBeHidden();
-  const { lease: scan } = await call("/v1/agent/claim", agentHeaders, {});
+  const { lease: scan } = await call("/v1/agent/native-claim", agentHeaders, {});
   assert.equal(scan?.command.kind, "windows.scan");
   const update = { id: crypto.randomUUID(), revision: 7, title: "Console acceptance security update" };
-  await call(`/v1/agent/jobs/${scan.id}/report`, agentHeaders, {
+  await call(`/v1/agent/native-jobs/${scan.id}/report`, agentHeaders, {
     leaseToken: scan.leaseToken,
     state: "succeeded",
     result: { testFixture: true, updates: [update] },
@@ -189,7 +190,7 @@ export async function verifyOperationalWorkflows({
   );
   await page.getByRole("button", { name: "Refresh data", exact: true }).click();
   await held;
-  await call(`/v1/devices/${secondDevice.deviceId}/revoke`, operatorHeaders, {});
+  await fixture.revoke(secondDevice.enrollmentId);
   await page.getByRole("button", { name: "Refresh data", exact: true }).click();
   const revokedRow = page.getByRole("row").filter({ hasText: secondDevice.deviceId.slice(0, 8) });
   await expect(revokedRow).toBeHidden();
